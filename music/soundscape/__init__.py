@@ -1,0 +1,1 @@
+# music/soundscape package initialization
