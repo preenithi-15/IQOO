@@ -79,8 +79,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
         .topbar .mark { width: 24px; height: 24px; color: var(--moss); flex-shrink: 0; }
         .topbar span { font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; letter-spacing: 0.4px; color: var(--moss-deep); }
 
-        /* NATIVE MOBILE APP ADAPTATION (Any Phone & Standalone PWA) */
-        @media (max-width: 600px), (display-mode: standalone), (max-device-width: 600px) {
+        /* NATIVE MOBILE APP ADAPTATION (Any Phone, Tablet, Standalone PWA, or Mobile View) */
+        @media (max-width: 900px), (max-device-width: 900px), (display-mode: standalone), (pointer: coarse) {
             html, body {
                 background: var(--bg) !important;
                 height: 100% !important;
@@ -120,6 +120,46 @@ HTML_PAGE = r"""<!DOCTYPE html>
             .page {
                 padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
             }
+        }
+
+        html.mobile-app-view, html.mobile-app-view body {
+            background: var(--bg) !important;
+            height: 100% !important;
+            height: 100dvh !important;
+            overflow: hidden !important;
+        }
+        html.mobile-app-view #phone-wrap {
+            height: 100% !important;
+            height: 100dvh !important;
+            width: 100% !important;
+            display: block !important;
+        }
+        html.mobile-app-view #app {
+            width: 100% !important;
+            width: 100vw !important;
+            max-width: 100% !important;
+            height: 100% !important;
+            height: 100dvh !important;
+            max-height: 100dvh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        html.mobile-app-view .statusbar {
+            display: none !important;
+        }
+        html.mobile-app-view .topbar {
+            padding-top: max(10px, env(safe-area-inset-top)) !important;
+            padding-left: max(16px, env(safe-area-inset-left));
+            padding-right: max(16px, env(safe-area-inset-right));
+        }
+        html.mobile-app-view .bottomnav {
+            padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+            padding-left: max(16px, env(safe-area-inset-left));
+            padding-right: max(16px, env(safe-area-inset-right));
+        }
+        html.mobile-app-view .page {
+            padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
         }
 
         .pwa-install-banner { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #f2faed, #e6f2de); border: 1.5px solid var(--moss-soft); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(42,74,44,0.08); }
@@ -394,9 +434,14 @@ HTML_PAGE = r"""<!DOCTYPE html>
             <path d="M50 6c15 6 21 19 14 33-4-2-8-5-10-9 6-2 8-8 5-15-5 4-9 11-7 19-7-6-9-17-5-27 1-0.5 2-1 3-1Z" fill="currentColor"/>
         </svg>
         <span>NATURA</span>
-        <button id="installAppBtn" class="btn xs gold" style="display:none; margin-left:auto; font-size:10.5px; padding:3px 9px; font-weight:700; border-radius:999px; gap:4px; align-items:center;" onclick="triggerAppInstall()">
-            <span>📲</span><span>Install App</span>
-        </button>
+        <div style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+            <button id="viewToggleBtn" class="btn xs outline" style="font-size:10px; padding:3px 8px; border-radius:999px; display:inline-flex; align-items:center; gap:4px;" onclick="toggleMobileDesktopView()" title="Toggle Mobile / Frame View">
+                <span>📱</span><span id="viewToggleLabel">Mobile View</span>
+            </button>
+            <button id="installAppBtn" class="btn xs gold" style="font-size:10.5px; padding:3px 9px; font-weight:700; border-radius:999px; gap:4px; align-items:center; display:inline-flex;" onclick="triggerAppInstall()">
+                <span>📲</span><span>Install App</span>
+            </button>
+        </div>
     </div>
 
     <main>
@@ -748,6 +793,26 @@ setTimeout(() => {
    ========================================================= */
 let deferredPrompt = null;
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+function detectMobileEnvironment() {
+    const isMobileUA = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isTouchScreen = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const isNarrow = window.innerWidth <= 900;
+    const isModeApp = window.location.search.includes('mode=app') || window.location.search.includes('mobile=1');
+    if (isMobileUA || (isTouchScreen && isNarrow) || isNarrow || isModeApp) {
+        document.documentElement.classList.add('mobile-app-view');
+        const lbl = document.getElementById('viewToggleLabel');
+        if (lbl) lbl.textContent = 'Phone Frame';
+    }
+}
+detectMobileEnvironment();
+window.addEventListener('resize', detectMobileEnvironment);
+
+function toggleMobileDesktopView() {
+    const isNowMobile = document.documentElement.classList.toggle('mobile-app-view');
+    const lbl = document.getElementById('viewToggleLabel');
+    if (lbl) lbl.textContent = isNowMobile ? 'Phone Frame' : 'Mobile View';
+}
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
