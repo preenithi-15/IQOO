@@ -6,11 +6,14 @@ import urllib.parse
 import sys
 from dataclasses import asdict
 from pathlib import Path
+import numpy as np
 
 # Add project root
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from ai.audio_classifier.classifier import BioacousticClassifier
+from ai.vision_classifier.classifier import VisionClassifier
 from app.ui.office_kit_bridge import VivoOfficeKitBridge
 from data.lessons import NatureLanguageBook
 
@@ -249,6 +252,20 @@ HTML_PAGE = r"""<!DOCTYPE html>
         .sample-chip .sc-label { font-size: 8.5px; color: var(--ink-soft); margin-top: 3px; }
         .sample-chip .sc-x { position:absolute; top:-4px; right:-4px; width:17px; height:17px; border-radius:50%; background: var(--red); color:#fff; border:none; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 
+        .live-toast { position: absolute; top: 12px; left: 14px; right: 14px; background: var(--moss-deep); color: #fff; padding: 10px 14px; border-radius: 12px; font-size: 11px; font-weight: 600; box-shadow: 0 4px 18px rgba(0,0,0,0.25); z-index: 50; display: flex; align-items: center; justify-content: space-between; gap: 8px; animation: slideDown 0.25s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .video-mix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 210px; overflow-y: auto; margin-bottom: 10px; }
+        .video-mix-item { border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg-alt); cursor: pointer; position: relative; transition: all 0.2s; }
+        .video-mix-item.selected { border-color: var(--moss); box-shadow: 0 0 0 2px var(--moss-soft); background: #f2f8ee; }
+        .video-mix-item .vm-thumb { width: 100%; height: 72px; background: #111; position: relative; display: flex; align-items: center; justify-content: center; overflow:hidden; }
+        .video-mix-item .vm-thumb video, .video-mix-item .vm-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .video-mix-item .vm-badge { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.65); color: #fff; font-size: 8.5px; padding: 2px 5px; border-radius: 4px; font-weight: 700; }
+        .video-mix-item .vm-title { font-size: 10.5px; font-weight: 700; padding: 5px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+        .video-mix-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+        .video-mix-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--moss-soft); color: var(--moss-deep); border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 700; }
+        .video-mix-chip button { background: none; border: none; color: var(--moss-deep); font-weight: 800; cursor: pointer; padding: 0; }
+        .quest-celebration { background: linear-gradient(145deg, #f2faed, #e2f0d9); border: 2px solid var(--moss); border-radius: var(--radius); padding: 16px; text-align: center; margin-bottom: 14px; }
+
         .modal-backdrop { position: absolute; inset: 0; background: rgba(20,20,10,0.5); display: none; align-items: flex-end; z-index: 20; }
         .modal-backdrop.open { display: flex; }
         .modal { background: var(--panel); width: 100%; border-radius: 22px 22px 0 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 10px)); max-height: 85%; overflow-y: auto; }
@@ -369,6 +386,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
                     <div class="status" id="vidStatus">Sight + sound.</div>
                 </div>
             </div>
+            <div id="liveToast" class="live-toast" style="display:none;"></div>
 
             <div class="section-heading">
                 <div class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M19 11a7 7 0 0 1-14 0"/></svg></div>
@@ -490,7 +508,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
         <section id="page-quest" class="page">
             <div class="eyebrow">Nature Quest</div>
             <h1 class="display">Ten minutes in the field</h1>
-            <p class="page-lede">Step outside. Each mission is checked against what you actually submit — record the wrong thing and NATURA will ask you to try again.</p>
+            <div id="questTheme" style="font-size:12px; font-weight:700; color:var(--moss-deep); margin-bottom:4px;">Mission 1: The Pollinator's Trail</div>
+            <p class="page-lede">Step outside. Each mission is checked by NATURA AI against what you actually submit — record the wrong sound or capture non-nature images and NATURA will guide you to retry.</p>
 
             <div class="quest-timer">
                 <div>
@@ -501,15 +520,53 @@ HTML_PAGE = r"""<!DOCTYPE html>
             </div>
             <div class="progressbar"><div id="questProgress"></div></div>
 
+            <div id="questCelebration" style="display:none;" class="quest-celebration">
+                <div style="font-size:24px; margin-bottom:4px;">🏆</div>
+                <h3 style="color:var(--moss-deep); font-size:16px; margin-bottom:4px;">Quest Round Completed!</h3>
+                <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:12px;">All missions verified by NATURA AI. Your Nature Moment has been saved to your Album.</p>
+                <button class="btn gold block" style="font-weight:700;" onclick="startNewQuestRound()">⚡ Generate New Quest</button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin: 12px 0 10px; padding:0 2px;">
+                <span style="font-size:11px; color:var(--ink-soft);">Can't find a sound or subject nearby?</span>
+                <button class="btn xs outline" style="font-size:10.5px; padding:3px 9px;" onclick="skipNextQuestStep()">Skip Next Step ⏭</button>
+            </div>
+
             <div id="questCardsWrap"></div>
             <button class="btn block" id="questSaveBtn" onclick="saveQuestMoment()" disabled>Save Nature Moment to Album</button>
+            <button class="btn outline block" style="margin-top:8px;" onclick="startNewQuestRound()">⚡ Generate New Quest</button>
         </section>
 
         <!-- PAGE 5: COMPOSE -->
         <section id="page-compose" class="page">
             <div class="eyebrow">Nature Composer</div>
             <h1 class="display">Mix &amp; edit your soundscape</h1>
-            <p class="page-lede">Blend reference field clips, or pull your own recordings from the Album into a Nature Cinema.</p>
+            <p class="page-lede">Blend reference field clips, or mix videos taken on the Live page into a Nature Cinema reel.</p>
+
+            <div class="section-heading">
+                <div class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3Z"/></svg></div>
+                <h2>Field Video Mixer</h2>
+            </div>
+            <div class="card" id="videoMixerCard">
+                <p class="desc">Videos recorded on the Live page appear here automatically. Select videos to mix into a seamless sequence with ambient nature soundscapes.</p>
+                <div class="video-mix-grid" id="videoMixGrid"></div>
+                <div class="video-mix-chips" id="videoMixChips"></div>
+                <div style="margin: 10px 0 6px;">
+                    <span class="field-label" style="font-size:11px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px;">Overlay Ambient Nature Soundscape</span>
+                    <select id="videoMixTrackSelect" class="comp-name-input" style="margin-bottom:8px;">
+                        <option value="none">Original Video Audio Only</option>
+                        <option value="cricket">Twilight Field Crickets (48kHz Bioacoustics)</option>
+                        <option value="rain">Monsoon Rain on Teak Leaves</option>
+                        <option value="bee">Humming Pollinator Meadow</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                    <button class="btn block" onclick="playVideoMix()">▶ Play Video Mix</button>
+                    <button class="btn ghost sm" onclick="stopCinema()">■ Stop</button>
+                </div>
+                <input class="comp-name-input" id="videoMixName" type="text" placeholder="Name this video mix…" value="Field Video Mix 1">
+                <button class="btn outline block" onclick="saveVideoMix()">Save Video Mix to Cinema</button>
+            </div>
 
             <div class="section-heading">
                 <div class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div>
@@ -527,13 +584,13 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
             <div class="section-heading">
                 <div class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h1l1.2-1.6A1 1 0 0 1 9 4h6a1 1 0 0 1 .8.4L17 6h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/><circle cx="12" cy="13" r="3.4"/></svg></div>
-                <h2>Create Cinema</h2>
+                <h2>Nature Cinema Player</h2>
             </div>
             <div class="card">
-                <p class="desc">Pick clips from any album group — mix and match photos, videos and sounds — to build a short Nature Cinema montage.</p>
+                <p class="desc">Sequence album clips and videos into a Nature Cinema montage.</p>
                 <div class="cinema-pick-list" id="cinemaPickList"></div>
                 <div class="cinema-chips" id="cinemaChips"></div>
-                <div class="cinema-stage" id="cinemaStage"><span class="cs-empty">Select clips above, then Preview</span></div>
+                <div class="cinema-stage" id="cinemaStage"><span class="cs-empty">Select clips or a video mix above, then Preview</span></div>
                 <div style="display:flex; gap:8px; margin-bottom:10px;">
                     <button class="btn outline block sm" onclick="previewCinema()">▶ Preview</button>
                     <button class="btn ghost block sm" onclick="stopCinema()">■ Stop</button>
@@ -544,16 +601,14 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
             <div class="section-heading">
                 <div class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20c3-1 4-4 4-7s-1-4-1-6a3 3 0 0 1 6 0c0 3-2 4-2 8s2 5 5 5"/></svg></div>
-                <h2>Your journey</h2>
+                <h2>Your journey &amp; saved reels</h2>
             </div>
             <div class="stat-grid cols-3">
                 <div class="stat-box"><div class="stat-num" id="journeySessions">21</div><div class="stat-label">Sessions</div></div>
-                <div class="stat-box"><div class="stat-num" id="journeyComps">1</div><div class="stat-label">Mixes</div></div>
+                <div class="stat-box"><div class="stat-num" id="journeyComps">0</div><div class="stat-label">Mixes</div></div>
                 <div class="stat-box"><div class="stat-num" id="journeyCinemas">0</div><div class="stat-label">Cinemas</div></div>
             </div>
-            <div class="card" id="savedComps">
-                <div class="saved-comp"><span style="font-size:16px;">🎼</span><div><b>Morning in Chennai — 02:14</b><br><span style="font-size:10.5px;color:var(--ink-soft)">Bee + wind, saved earlier</span></div></div>
-            </div>
+            <div class="card" id="savedComps"></div>
             <div class="card" id="savedCinemas" style="display:none;"></div>
         </section>
     </main>
@@ -618,8 +673,11 @@ const CLIPS = {
 const CATEGORY_META = {
     bee:     { label: "Bee-like hum",        scene: "bee",     learn: "insects" },
     cricket: { label: "Cricket / insect chirp", scene: "cricket", learn: "insects" },
+    bird:    { label: "Bird song / whistle", scene: "generic", learn: "insects" },
     rain:    { label: "Rain / wind ambience", scene: "rain",    learn: "weather" },
-    bat:     { label: "High-frequency buzz (bat-like)", scene: "night", learn: "night" },
+    bat:     { label: "High-frequency bat echolocation", scene: "night", learn: "night" },
+    foliage: { label: "Botanical foliage",   scene: "leaf",    learn: "plants" },
+    flower:  { label: "Floral blossom",      scene: "bee",     learn: "plants" },
     sighting:{ label: "Field sighting",      scene: "leaf",    learn: null },
     unknown: { label: "Unclassified sound",  scene: "generic", learn: null },
 };
@@ -642,31 +700,90 @@ const MODE_EXPLAIN = {
 };
 
 /* =========================================================
-   Lightweight on-device audio signature match
-   (zero-crossing rate = pitch proxy, RMS variance = pulse-vs-steady proxy)
+   On-device bioacoustic signature match — FFT-based spectral analysis.
+   Distinguishes bee wingbeat fundamental (160–380 Hz + harmonics),
+   cricket stridulation (4,000–8,000 Hz pulsed peaks),
+   ultrasound (>12 kHz), and broadband weather.
    ========================================================= */
 let audioCtx = null;
 function ensureCtx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
 
-function computeZCR(data, sampleRate) {
-    let crossings = 0;
-    for (let i = 1; i < data.length; i++) { if ((data[i-1] < 0) !== (data[i] < 0)) crossings++; }
-    return crossings / (data.length / sampleRate);
+function computeRMS(data) {
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+    return Math.sqrt(sum / data.length);
 }
-function computeCV(data, sampleRate) {
-    const win = Math.max(1, Math.floor(sampleRate * 0.05));
-    const rms = [];
-    for (let i = 0; i + win < data.length; i += win) {
-        let sum = 0;
-        for (let j = i; j < i + win; j++) sum += data[j] * data[j];
-        rms.push(Math.sqrt(sum / win));
+
+function fftInPlace(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+        let bit = n >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
     }
-    if (!rms.length) return 0;
-    const mean = rms.reduce((a,b) => a+b, 0) / rms.length;
-    if (mean === 0) return 0;
-    const variance = rms.reduce((a,b) => a + (b-mean)**2, 0) / rms.length;
-    return Math.sqrt(variance) / mean;
+    for (let len = 2; len <= n; len <<= 1) {
+        const ang = -2 * Math.PI / len;
+        const wr0 = Math.cos(ang), wi0 = Math.sin(ang);
+        for (let i = 0; i < n; i += len) {
+            let curWr = 1, curWi = 0;
+            for (let j = 0; j < len / 2; j++) {
+                const ur = re[i + j], ui = im[i + j];
+                const half = i + j + len / 2;
+                const vr = re[half] * curWr - im[half] * curWi;
+                const vi = re[half] * curWi + im[half] * curWr;
+                re[i + j] = ur + vr; im[i + j] = ui + vi;
+                re[half] = ur - vr; im[half] = ui - vi;
+                const nwr = curWr * wr0 - curWi * wi0, nwi = curWr * wi0 + curWi * wr0;
+                curWr = nwr; curWi = nwi;
+            }
+        }
+    }
 }
+function largestPow2LE(n) { let p = 1; while (p * 2 <= n) p *= 2; return p; }
+
+function analyzeSpectrum(data, sampleRate) {
+    const winSize = Math.max(512, Math.min(4096, largestPow2LE(data.length)));
+    if (winSize < 512) return { centroid: 0, flatness: 0, domFreq: 0, beeRatio: 0, cricketRatio: 0 };
+    const numWindows = Math.max(1, Math.min(12, Math.floor(data.length / winSize)));
+    const half = winSize / 2;
+    const magSum = new Float64Array(half + 1);
+    const window = new Float64Array(winSize);
+    for (let w = 0; w < winSize; w++) window[w] = 0.5 - 0.5 * Math.cos((2 * Math.PI * w) / (winSize - 1)); // Hann
+    for (let n = 0; n < numWindows; n++) {
+        const offset = n * winSize;
+        const re = new Float64Array(winSize), im = new Float64Array(winSize);
+        for (let i = 0; i < winSize; i++) re[i] = data[offset + i] * window[i];
+        fftInPlace(re, im);
+        for (let k = 0; k <= half; k++) magSum[k] += Math.hypot(re[k], im[k]);
+    }
+    const mag = magSum.map(v => v / numWindows);
+    const freqBin = sampleRate / winSize;
+    let sumMag = 0, sumFreqMag = 0, sumLogMag = 0;
+    let maxAudibleMag = 0, domFreq = 0;
+    let beeBandMag = 0, cricketBandMag = 0;
+    const eps = 1e-9;
+    for (let k = 1; k <= half; k++) { // skip DC bin
+        const freq = k * freqBin;
+        const m = mag[k];
+        sumMag += m;
+        sumFreqMag += freq * m;
+        sumLogMag += Math.log(m + eps);
+        if (freq >= 80 && m > maxAudibleMag) {
+            maxAudibleMag = m;
+            domFreq = freq;
+        }
+        if (freq >= 160 && freq <= 380) beeBandMag += m;
+        if (freq >= 4000 && freq <= 8000) cricketBandMag += m;
+    }
+    const centroid = sumMag > 0 ? sumFreqMag / sumMag : 0;
+    const meanMag = sumMag / half;
+    const flatness = meanMag > 0 ? Math.exp(sumLogMag / half) / meanMag : 0;
+    const beeRatio = sumMag > 0 ? beeBandMag / sumMag : 0;
+    const cricketRatio = sumMag > 0 ? cricketBandMag / sumMag : 0;
+    return { centroid, flatness, domFreq, beeRatio, cricketRatio };
+}
+
 async function classifyAudioUrl(url) {
     try {
         const ctx = ensureCtx();
@@ -674,18 +791,116 @@ async function classifyAudioUrl(url) {
         const arr = await resp.arrayBuffer();
         const buf = await ctx.decodeAudioData(arr);
         const data = buf.getChannelData(0);
-        const zcr = computeZCR(data, buf.sampleRate);
-        const cv = computeCV(data, buf.sampleRate);
-        let category = 'unknown', confidence = 50;
-        if (zcr < 650 && cv < 0.55) { category = 'bee'; confidence = Math.round(74 + Math.max(0, (650 - zcr) / 650) * 18); }
-        else if (zcr < 3500 && cv >= 0.55) { category = 'cricket'; confidence = Math.round(68 + Math.min(cv, 1.5) * 14); }
-        else if (zcr < 7000) { category = 'rain'; confidence = Math.round(64 + Math.min(cv, 1.5) * 16); }
-        else { category = 'bat'; confidence = Math.round(60 + Math.min((zcr - 7000) / 500, 20)); }
+        const rms = computeRMS(data);
+        if (rms < 0.003) return { category: 'unknown', confidence: 50, centroid: 0, flatness: 0, domFreq: 0, reason: 'too quiet' };
+        
+        const { centroid, flatness, domFreq, beeRatio, cricketRatio } = analyzeSpectrum(data, buf.sampleRate);
+        
+        // Try calling the backend BioacousticClassifier
+        try {
+            const step = Math.max(1, Math.floor(data.length / 2048));
+            const pcmSample = [];
+            for (let i = 0; i < data.length; i += step) pcmSample.push(data[i]);
+            const apiResp = await fetch('/api/classify_audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pcm: pcmSample, sample_rate: buf.sampleRate, dom_freq: domFreq, centroid, flatness })
+            });
+            if (apiResp.ok) {
+                const apiData = await apiResp.json();
+                if (apiData.status === 'ok') {
+                    return {
+                        category: apiData.category,
+                        confidence: apiData.confidence,
+                        label: apiData.label,
+                        centroid: Math.round(centroid),
+                        domFreq: Math.round(domFreq),
+                        flatness: +flatness.toFixed(2)
+                    };
+                }
+            }
+        } catch(netErr) { /* fallback to local classification */ }
+        
+        let category = 'unknown', confidence = 55;
+        // Discriminating decision tree:
+        if (centroid > 12000 || domFreq >= 16000) {
+            category = 'bat'; confidence = 89;
+        } else if ((domFreq >= 160 && domFreq <= 380) || (beeRatio > 0.09 && domFreq < 1200)) {
+            category = 'bee'; confidence = (domFreq >= 210 && domFreq <= 270) ? 93 : 88;
+        } else if ((domFreq >= 4000 && domFreq <= 8000) || (cricketRatio > 0.09 && domFreq > 3000)) {
+            category = 'cricket'; confidence = 91;
+        } else if (domFreq >= 1200 && domFreq <= 3800) {
+            category = 'bird'; confidence = 86;
+        } else if (flatness > 0.72) {
+            category = 'rain'; confidence = Math.round(72 + Math.min((flatness - 0.72) / 0.2, 1) * 20);
+        } else {
+            category = 'unknown'; confidence = 52;
+        }
         confidence = Math.max(50, Math.min(96, confidence));
-        return { category, confidence, zcr: Math.round(zcr), cv: +cv.toFixed(2) };
+        const meta = CATEGORY_META[category] || CATEGORY_META.unknown;
+        return {
+            category,
+            confidence,
+            label: meta.label,
+            centroid: Math.round(centroid),
+            domFreq: Math.round(domFreq),
+            flatness: +flatness.toFixed(2)
+        };
     } catch (err) {
-        return { category: 'unknown', confidence: 50, zcr: 0, cv: 0 };
+        return { category: 'unknown', confidence: 50, centroid: 0, flatness: 0, domFreq: 0 };
     }
+}
+
+async function classifyImageData(canvas) {
+    const anaCanvas = document.createElement('canvas');
+    anaCanvas.width = 64; anaCanvas.height = 64;
+    const anaCtx = anaCanvas.getContext('2d');
+    anaCtx.drawImage(canvas, 0, 0, 64, 64);
+    const imgData = anaCtx.getImageData(0, 0, 64, 64);
+    const rgba = Array.from(imgData.data);
+    
+    // Call backend VisionClassifier
+    try {
+        const resp = await fetch('/api/classify_image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rgba, width: 64, height: 64 })
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.status === 'ok') return data;
+        }
+    } catch (e) { /* local fallback */ }
+    
+    // Client-side computer vision heuristics
+    let floralCount = 0, greenCount = 0, edgeDiff = 0;
+    const pixels = 64 * 64;
+    for (let i = 0; i < rgba.length; i += 4) {
+        const r = rgba[i], g = rgba[i+1], b = rgba[i+2];
+        const exg = (2.0 * g - r - b) / (r + g + b + 1e-5);
+        if (exg > 0.12 && g > 40) greenCount++;
+        // Floral petal colors (yellow, magenta, violet, warm red/pink)
+        if ((r > 120 && g > 100 && b < 100 && (r+g) > 2.2*b) || 
+            (r > 90 && b > 100 && g < r*0.95 && g < b*0.95) || 
+            (r > 130 && g < r*0.8 && b < r*0.8)) {
+            floralCount++;
+        }
+        if (i > 4) edgeDiff += Math.abs((r+g+b) - (rgba[i-4]+rgba[i-3]+rgba[i-2]));
+    }
+    const edgeVar = edgeDiff / pixels;
+    const greenRatio = greenCount / pixels;
+    const floralRatio = floralCount / pixels;
+    
+    if (edgeVar < 18 && greenRatio < 0.08 && floralRatio < 0.03) {
+        return { category: 'non_botanical', confidence: 85, label: 'Non-botanical / Flat surface', reason: 'Scene lacks botanical structure, foliage, or floral pigmentation.' };
+    }
+    if (floralRatio > 0.05 || (floralRatio > 0.02 && greenRatio > 0.12)) {
+        return { category: 'flower', confidence: 91, label: 'Floral Blossom / Flower', reason: 'Vibrant petal pigmentation confirmed.' };
+    }
+    if (greenRatio > 0.10 || edgeVar > 35) {
+        return { category: 'foliage', confidence: 88, label: 'Botanical Foliage / Canopy', reason: 'Photosynthetic green leaf index confirmed.' };
+    }
+    return { category: 'non_botanical', confidence: 75, label: 'Non-nature / Unconfirmed', reason: 'Scene does not show clear flora or pollinators.' };
 }
 
 /* =========================================================
@@ -797,6 +1012,19 @@ function showPage(id, btn) {
     document.querySelectorAll('.bottomnav button').forEach(b => b.classList.remove('active'));
     if (btn) { btn.classList.add('active'); lastMainPage = id; }
     document.querySelector('main').scrollTop = 0;
+}
+function goToPage(id) {
+    const btn = document.querySelector('.bottomnav button[data-page="' + id + '"]');
+    showPage(id, btn);
+}
+function showLiveToast(msg, targetPageId) {
+    const toast = document.getElementById('liveToast');
+    if (!toast) return;
+    toast.innerHTML = '<span>' + msg + '</span>' +
+        (targetPageId ? '<button class="btn xs gold" style="padding:3px 8px; font-size:10px; flex-shrink:0;" onclick="goToPage(\'' + targetPageId + '\')">Open Compose →</button>' : '') +
+        '<button style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;line-height:1;margin-left:4px;" onclick="this.parentElement.style.display=\'none\'">×</button>';
+    toast.style.display = 'flex';
+    setTimeout(() => { if (toast) toast.style.display = 'none'; }, 7000);
 }
 
 (function buildTimeline() {
@@ -929,6 +1157,12 @@ function confirmSaveModal() {
         interpretation: pendingSave.audioUrl ? ("On-device signature matched to: " + meta.label + ". Compare Original, Enhanced and Sonified above to hear how the match was reached.") : "Captured by you — filed as a field sighting.",
     };
     const group = addSampleToAlbum(pendingSave.category, sample);
+    if (pendingSave.video) {
+        const existing = recordedVideos.find(v => v.video === pendingSave.video);
+        if (existing) { existing.name = name; }
+        renderVideoMixer();
+    }
+    renderCinemaPickList();
     if (pendingSave.onSaved) pendingSave.onSaved(sample, group);
     closeSaveModal();
 }
@@ -1019,6 +1253,20 @@ async function toggleVideo() {
             const url = URL.createObjectURL(blob);
             vidStage.innerHTML = '<video src="'+url+'" controls></video>';
             vidStatus.textContent = 'Recorded.';
+
+            const vidItem = {
+                id: newId('vid'),
+                name: 'Field Video ' + (recordedVideos.length + 1),
+                video: url,
+                videoThumb: null,
+                date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                category: 'sighting'
+            };
+            recordedVideos.unshift(vidItem);
+            renderVideoMixer();
+            renderCinemaPickList();
+            showLiveToast('🎬 Field video recorded! Ready in Compose page.', 'page-compose');
+
             const tmpVideo = document.createElement('video');
             tmpVideo.src = url; tmpVideo.muted = true; tmpVideo.playsInline = true;
             tmpVideo.addEventListener('loadeddata', () => { tmpVideo.currentTime = Math.min(0.3, (tmpVideo.duration || 1) / 2); });
@@ -1027,7 +1275,9 @@ async function toggleVideo() {
                 canvas.width = tmpVideo.videoWidth || 320; canvas.height = tmpVideo.videoHeight || 240;
                 canvas.getContext('2d').drawImage(tmpVideo, 0, 0, canvas.width, canvas.height);
                 const thumb = canvas.toDataURL('image/jpeg', 0.85);
-                openSaveModal({ video: url, videoThumb: thumb, category: 'sighting', defaultName: 'Field video', place: 'Current location', onSaved: () => { vidStatus.textContent = 'Saved to Album.'; } });
+                vidItem.videoThumb = thumb;
+                renderVideoMixer();
+                openSaveModal({ video: url, videoThumb: thumb, category: 'sighting', defaultName: vidItem.name, place: 'Current location', onSaved: () => { vidStatus.textContent = 'Saved to Album.'; } });
             }, { once: true });
         };
         vidRecorder.start();
@@ -1148,15 +1398,60 @@ async function toggleLearnRecord() {
 /* =========================================================
    Quest — specific missions, validated against what's submitted
    ========================================================= */
-const QUEST_STEPS = [
-    { id: 'q1', title: 'Record an insect in the bee or wasp family', detail: 'Find any buzzing or humming insect and record 10+ seconds up close. NATURA checks the signature matches a steady bee-like hum.', type: 'audio', targetCategory: 'bee', targetLabel: 'a bee-like hum' },
-    { id: 'q2', title: 'Photograph a bee, wasp or the flower it visits', detail: 'Take a photo, then confirm what you actually captured.', type: 'photo', targetTags: ['bee', 'wasp', 'flower'] },
-    { id: 'q3', title: 'Record 10 seconds of wind, rain, or rustling leaves', detail: 'Stand still and let the mic capture ambient weather or plant sound. NATURA checks for a broadband, non-pulsed signature.', type: 'audio', targetCategory: 'rain', targetLabel: 'rain/wind/leaf ambience' },
-    { id: 'q4', title: 'Mix or cut at least two clips into something new', detail: 'On Compose, turn on two field clips (or build a Cinema) and save the result.', type: 'compose' },
-    { id: 'q5', title: 'Save this session as a Nature Moment', detail: 'Once the four missions above are done, bundle them into your Album, tagged Quest.', type: 'save' },
+const QUEST_ROUNDS = [
+    {
+        theme: "Mission 1: The Pollinator's Trail",
+        steps: [
+            { id: 'q1', title: 'Record a foraging honeybee hum', detail: 'Listen for steady 200–260 Hz wingbeat hums. NATURA AI checks for acoustic harmonic flight oscillation.', type: 'audio', targetCategory: 'bee', targetLabel: 'a bee-like hum' },
+            { id: 'q2', title: 'Photograph a flower blossom or pollinator', detail: 'Aim your camera at a blooming flower, petal, or pollinator. NATURA AI verifies floral chrominance.', type: 'photo', targetCategories: ['flower', 'bee', 'foliage'] },
+            { id: 'q3', title: 'Record ambient wind, rain, or leaf rustle', detail: 'Capture 10+ seconds of background weather or foliage acoustics.', type: 'audio', targetCategory: 'rain', targetLabel: 'rain, wind, or leaf ambience' },
+            { id: 'q4', title: 'Mix clips or field videos in Compose', detail: 'Go to Compose, mix your captured videos or field clips into a cinema reel, and save.', type: 'compose' },
+            { id: 'q5', title: 'Save session as a Nature Moment', detail: 'Complete the missions above to bundle them into your Nature Album, tagged Quest.', type: 'save' }
+        ]
+    },
+    {
+        theme: "Mission 2: Night Chorus & Crepuscular Echoes",
+        steps: [
+            { id: 'q1', title: 'Record a night cricket chirp or stridulation', detail: 'Listen for rhythmic 4.5k–7.5k Hz chirps. NATURA AI checks for stridulation pulse energy.', type: 'audio', targetCategory: 'cricket', targetLabel: 'a cricket chirp' },
+            { id: 'q2', title: 'Photograph garden foliage or canopy leaves', detail: 'Aim camera at green leaf surfaces or botanical vegetation. NATURA AI verifies green vegetation index.', type: 'photo', targetCategories: ['foliage', 'flower', 'bee'] },
+            { id: 'q3', title: 'Record bat ultrasound or night acoustics', detail: 'Detect high-frequency bat echolocation sweeps or night atmospheric biophony.', type: 'audio', targetCategory: 'bat', targetLabel: 'bat echolocation or high-frequency buzz' },
+            { id: 'q4', title: 'Mix field clips or video reels into Cinema', detail: 'Go to Compose, blend clips with ambient soundscapes and preview.', type: 'compose' },
+            { id: 'q5', title: 'Save session as a Nature Moment', detail: 'Bundle your twilight discoveries into your Nature Album.', type: 'save' }
+        ]
+    },
+    {
+        theme: "Mission 3: Avian Canopy Symphony",
+        steps: [
+            { id: 'q1', title: 'Record bird vocalization or whistling chirp', detail: 'Capture modulated 1.5k–3.8k Hz syrinx whistles. NATURA checks for avian frequency contours.', type: 'audio', targetCategory: 'bird', targetLabel: 'bird song or whistle' },
+            { id: 'q2', title: 'Photograph tree canopy, branch, or perching flora', detail: 'Point camera at botanical branches, tree bark, or flowers. NATURA AI checks macro flora structure.', type: 'photo', targetCategories: ['foliage', 'flower', 'bee'] },
+            { id: 'q3', title: 'Record rainfall patter or leaf impact', detail: 'Record rain or water impact sounds. NATURA checks for stochastic broadband percussion.', type: 'audio', targetCategory: 'rain', targetLabel: 'rain or wind ambience' },
+            { id: 'q4', title: 'Compose an Avian Cinema Montage', detail: 'Assemble a sequence of clips in Compose and save the montage.', type: 'compose' },
+            { id: 'q5', title: 'Save session as a Nature Moment', detail: 'Save this rich canopy moment into your Nature Album.', type: 'save' }
+        ]
+    },
+    {
+        theme: "Mission 4: Micro-Fauna & Forest Floor",
+        steps: [
+            { id: 'q1', title: 'Record buzzing pollinator or insect stridulation', detail: 'Record close-up insect acoustics (bee hum or cricket chirp).', type: 'audio', targetCategories: ['bee', 'cricket'], targetLabel: 'bee hum or cricket chirp' },
+            { id: 'q2', title: 'Photograph flower petals or botanical moss', detail: 'Capture vibrant plant flora, moss, or petals. NATURA AI inspects cellular coloration.', type: 'photo', targetCategories: ['flower', 'foliage'] },
+            { id: 'q3', title: 'Record forest wind or canopy rustle', detail: 'Capture 10+ seconds of laminar friction through trees or grass.', type: 'audio', targetCategory: 'rain', targetLabel: 'wind, rain, or rustling leaves' },
+            { id: 'q4', title: 'Sequence a Field Video Mix in Compose', detail: 'Pick your recorded videos, add an ambient soundtrack, and preview.', type: 'compose' },
+            { id: 'q5', title: 'Save session as a Nature Moment', detail: 'Archive this micro-fauna session into your Nature Album.', type: 'save' }
+        ]
+    }
 ];
-const questDone = { q1: false, q2: false, q3: false, q4: false, q5: false };
-const questSamples = {};
+
+let questRound = 0;
+let QUEST_STEPS = [];
+function buildQuestSteps(roundIdx) {
+    const round = QUEST_ROUNDS[roundIdx % QUEST_ROUNDS.length];
+    const themeEl = document.getElementById('questTheme');
+    if (themeEl) themeEl.textContent = round.theme + ' (Round ' + (roundIdx + 1) + ')';
+    return round.steps.map(s => ({ ...s }));
+}
+QUEST_STEPS = buildQuestSteps(0);
+let questDone = { q1: false, q2: false, q3: false, q4: false, q5: false };
+let questSamples = {};
 
 function renderQuestCards() {
     const wrap = document.getElementById('questCardsWrap');
@@ -1166,9 +1461,18 @@ function renderQuestCards() {
         const card = document.createElement('div');
         card.className = 'card quest-card' + (done ? ' complete' : '');
         let actionHtml = '';
-        if (step.type === 'audio') actionHtml = '<button class="btn sm outline" onclick="questRecordAudio(\''+step.id+'\')" id="qbtn-'+step.id+'">● Record</button>';
-        else if (step.type === 'photo') actionHtml = '<button class="btn sm outline" onclick="questCapturePhoto(\''+step.id+'\')" id="qbtn-'+step.id+'">📷 Capture</button>';
-        else if (step.type === 'compose') actionHtml = '<button class="btn sm outline" onclick="showPage(\'page-compose\', document.querySelector(\'.bottomnav button[data-page=page-compose]\'))">Go to Compose →</button>';
+        if (!done) {
+            if (step.type === 'audio') {
+                actionHtml = '<button class="btn sm outline" onclick="questRecordAudio(\''+step.id+'\')" id="qbtn-'+step.id+'">● Record</button>' +
+                             '<button class="btn sm ghost" style="color:var(--sand-deep); font-size:11px; margin-left:auto;" onclick="skipQuestStep(\''+step.id+'\')" title="Skip if not found nearby">Skip step ⏭</button>';
+            } else if (step.type === 'photo') {
+                actionHtml = '<button class="btn sm outline" onclick="questCapturePhoto(\''+step.id+'\')" id="qbtn-'+step.id+'">📷 Capture</button>' +
+                             '<button class="btn sm ghost" style="color:var(--sand-deep); font-size:11px; margin-left:auto;" onclick="skipQuestStep(\''+step.id+'\')" title="Skip if not found nearby">Skip step ⏭</button>';
+            } else if (step.type === 'compose') {
+                actionHtml = '<button class="btn sm outline" onclick="showPage(\'page-compose\', document.querySelector(\'.bottomnav button[data-page=page-compose]\'))">Go to Compose →</button>' +
+                             '<button class="btn sm ghost" style="color:var(--sand-deep); font-size:11px; margin-left:auto;" onclick="skipQuestStep(\''+step.id+'\')" title="Skip if not found nearby">Skip step ⏭</button>';
+            }
+        }
         card.innerHTML =
             '<div class="qhead"><div class="qnum'+(done?' done':'')+'">'+(done?'✓':(i+1))+'</div>' +
             '<div><div class="qtitle">'+step.title+'</div><div class="qdetail">'+step.detail+'</div></div></div>' +
@@ -1176,10 +1480,56 @@ function renderQuestCards() {
             '<div class="quest-mini-stage empty" id="qstage-'+step.id+'"></div>';
         wrap.appendChild(card);
         const stage = document.getElementById('qstage-'+step.id);
-        if (done && questSamples[step.id]) stage.innerHTML = '<span style="font-size:10.5px; color:var(--moss-deep); font-weight:700;">✓ Matched — added to your Album</span>';
-        else stage.textContent = 'Nothing submitted yet';
+        if (done && questSamples[step.id]) {
+            if (questSamples[step.id].skipped) {
+                stage.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; width:100%;">' +
+                    '<span style="font-size:10.5px; color:var(--sand-deep); font-weight:700;">⏭ Skipped (Field pass granted)</span>' +
+                    '<button class="btn xs ghost" style="color:var(--ink-soft); font-size:10px; padding:2px 6px;" onclick="undoQuestStep(\''+step.id+'\')">↺ Redo</button>' +
+                    '</div>';
+            } else {
+                stage.innerHTML = '<span style="font-size:10.5px; color:var(--moss-deep); font-weight:700;">✓ Verified — saved to your Album</span>';
+            }
+        } else {
+            stage.textContent = 'Nothing submitted yet';
+        }
     });
     updateQuestSaveState();
+}
+
+function skipQuestStep(stepId) {
+    if (questRecordingStepId === stepId && questAudioRecorder) {
+        try { questAudioRecorder.stop(); } catch(e){}
+        questRecordingStepId = null;
+    }
+    if (questCamStream) {
+        try { questCamStream.getTracks().forEach(t => t.stop()); } catch(e){}
+        questCamStream = null;
+    }
+    const step = QUEST_STEPS.find(s => s.id === stepId);
+    questDone[stepId] = true;
+    questSamples[stepId] = {
+        id: newId('skip'),
+        name: (step ? step.title : 'Field Quest Mission') + ' (Field pass)',
+        date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        place: 'Nature Quest Field Pass',
+        skipped: true
+    };
+    renderQuestCards();
+}
+
+function undoQuestStep(stepId) {
+    questDone[stepId] = false;
+    delete questSamples[stepId];
+    renderQuestCards();
+}
+
+function skipNextQuestStep() {
+    const nextStep = QUEST_STEPS.find(s => !questDone[s.id] && s.type !== 'save');
+    if (nextStep) {
+        skipQuestStep(nextStep.id);
+    } else {
+        alert('All quest missions have already been completed or skipped!');
+    }
 }
 renderQuestCards();
 
@@ -1198,18 +1548,21 @@ async function questRecordAudio(stepId) {
             stream.getTracks().forEach(t => t.stop());
             const blob = new Blob(questAudioChunks, { type: 'audio/webm' });
             const url = URL.createObjectURL(blob);
-            stage.textContent = 'Analyzing…';
+            stage.textContent = 'Analyzing bioacoustic signature…';
             const step = QUEST_STEPS.find(s => s.id === stepId);
             const result = await classifyAudioUrl(url);
-            if (result.category === step.targetCategory) {
-                const meta = CATEGORY_META[result.category];
+            
+            const isMatch = step.targetCategory ? (result.category === step.targetCategory) : (step.targetCategories && step.targetCategories.includes(result.category));
+            if (isMatch) {
+                const meta = CATEGORY_META[result.category] || CATEGORY_META.unknown;
                 openSaveModal({
                     audioUrl: url, category: result.category, confidence: result.confidence, defaultName: step.title, place: 'Quest field session', badge: 'Quest',
                     onSaved: (sample) => { questDone[stepId] = true; questSamples[stepId] = sample; renderQuestCards(); }
                 });
             } else {
                 const gotMeta = CATEGORY_META[result.category] || CATEGORY_META.unknown;
-                stage.innerHTML = '<span class="quest-fail">That matched "'+gotMeta.label+'", not '+step.targetLabel+'. Try again.</span>';
+                stage.innerHTML = '<span class="quest-fail">That matched "'+gotMeta.label+'", not '+step.targetLabel+'. Try again.</span>' +
+                    '<div style="margin-top:6px;"><button class="btn xs ghost" style="color:var(--sand-deep); text-decoration:underline;" onclick="skipQuestStep(\''+stepId+'\')">Can\'t find this sound? Skip step ⏭</button></div>';
             }
         };
         questAudioRecorder.start(); questRecordingStepId = stepId; btn.textContent = '■ Stop';
@@ -1229,10 +1582,34 @@ async function questCapturePhoto(stepId) {
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
         if (questCamStream) questCamStream.getTracks().forEach(t => t.stop());
         btn.textContent = '📷 Capture';
-        const step = QUEST_STEPS.find(s => s.id === stepId);
+        
         stage.innerHTML = '<img src="'+dataUrl+'" style="height:70px;object-fit:cover;border-radius:8px;">' +
-            '<div style="font-size:10.5px; color:var(--ink-soft); text-align:center;">What did you actually capture?</div>' +
-            '<div class="chip-select">' + ['Bee','Wasp','Flower','Butterfly','Housefly','Ant','Other'].map(t => '<button onclick="questConfirmTag(\''+stepId+'\',\''+t.toLowerCase()+'\',\''+dataUrl.replace(/'/g, "\\'")+'\')">'+t+'</button>').join('') + '</div>';
+            '<div style="font-size:11px; color:var(--moss-deep); font-weight:700; margin-top:4px;">🔍 AI Vision analyzing botanical subject…</div>';
+        
+        const visionRes = await classifyImageData(canvas);
+        const step = QUEST_STEPS.find(s => s.id === stepId);
+        const validCategories = step.targetCategories || ['flower', 'bee', 'foliage'];
+        
+        if (visionRes.category === 'non_botanical' || !validCategories.includes(visionRes.category)) {
+            stage.innerHTML = '<img src="'+dataUrl+'" style="height:70px;object-fit:cover;border-radius:8px;filter:grayscale(0.7);">' +
+                '<div class="quest-fail" style="margin-top:6px;">✗ '+visionRes.label+': No botanical subject or bloom detected.</div>' +
+                '<div style="font-size:10px; color:var(--ink-soft); margin-bottom:6px;">'+(visionRes.reason || 'Point camera at a flower, leaf, or pollinator.')+'</div>' +
+                '<div style="display:flex; gap:8px; align-items:center;">' +
+                '<button class="btn xs outline" onclick="questCapturePhoto(\''+stepId+'\')">📷 Retake photo</button>' +
+                '<button class="btn xs ghost" style="color:var(--sand-deep); text-decoration:underline;" onclick="skipQuestStep(\''+stepId+'\')">Can\'t find a plant? Skip step ⏭</button>' +
+                '</div>';
+            return;
+        }
+        
+        // AI Vision verified!
+        stage.innerHTML = '<img src="'+dataUrl+'" style="height:70px;object-fit:cover;border-radius:8px;">' +
+            '<div style="font-size:11px; color:var(--moss-deep); font-weight:700; margin-top:4px;">✓ AI Verified: '+visionRes.label+' ('+visionRes.confidence+'% match)</div>';
+        
+        openSaveModal({
+            photo: dataUrl, category: visionRes.category === 'flower' ? 'flower' : (visionRes.category === 'bee' ? 'bee' : 'foliage'),
+            defaultName: visionRes.label, place: 'Quest field session', badge: 'Quest',
+            onSaved: (sample) => { questDone[stepId] = true; questSamples[stepId] = sample; renderQuestCards(); }
+        });
         return;
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { stage.textContent = 'Camera not available.'; return; }
@@ -1242,20 +1619,6 @@ async function questCapturePhoto(stepId) {
         stage.classList.remove('empty'); stage.innerHTML = ''; stage.appendChild(video);
         btn.textContent = '📸 Snap';
     } catch (err) { stage.textContent = 'Camera permission denied.'; }
-}
-function questConfirmTag(stepId, tag, dataUrl) {
-    const stage = document.getElementById('qstage-'+stepId);
-    const step = QUEST_STEPS.find(s => s.id === stepId);
-    if (step.targetTags.includes(tag)) {
-        openSaveModal({
-            photo: dataUrl, category: tag === 'flower' ? 'sighting' : (tag === 'bee' ? 'bee' : 'sighting'), defaultName: step.title, place: 'Quest field session', badge: 'Quest',
-            onSaved: (sample) => { questDone[stepId] = true; questSamples[stepId] = sample; renderQuestCards(); }
-        });
-    } else {
-        stage.innerHTML = '<span class="quest-fail">That looked like "'+tag+'" — this mission needs a bee, wasp, or the flower it visits. Try again.</span>' +
-            '<button class="btn xs outline" onclick="questCapturePhoto(\''+stepId+'\')" style="margin-top:6px;">Retake photo</button>';
-        document.getElementById('qbtn-'+stepId).textContent = '📷 Capture';
-    }
 }
 
 function updateQuestSaveState() {
@@ -1267,9 +1630,34 @@ function updateQuestSaveState() {
 function saveQuestMoment() {
     if (document.getElementById('questSaveBtn').disabled) return;
     questDone.q5 = true;
-    renderQuestCards();
     document.getElementById('questSaveBtn').disabled = true;
     document.getElementById('questSaveBtn').textContent = 'Nature Moment saved ✓';
+    renderQuestCards();
+    
+    // Display celebration card with prompt to generate a new quest
+    const celeb = document.getElementById('questCelebration');
+    if (celeb) celeb.style.display = 'block';
+    celeb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function startNewQuestRound() {
+    questRound++;
+    QUEST_STEPS = buildQuestSteps(questRound);
+    questDone = { q1: false, q2: false, q3: false, q4: false, q5: false };
+    questSamples = {};
+    clearInterval(questInterval);
+    questRunning = false;
+    questSeconds = 600;
+    document.getElementById('questTime').textContent = '10:00';
+    document.getElementById('questProgress').style.width = '0%';
+    const btn = document.getElementById('questBtn');
+    btn.disabled = false; btn.textContent = 'Begin quest';
+    document.getElementById('questState').textContent = 'New quest ready';
+    const saveBtn = document.getElementById('questSaveBtn');
+    saveBtn.disabled = true; saveBtn.textContent = 'Save Nature Moment to Album';
+    const celeb = document.getElementById('questCelebration');
+    if (celeb) celeb.style.display = 'none';
+    renderQuestCards();
 }
 
 let questInterval = null, questSeconds = 600, questRunning = false;
@@ -1345,67 +1733,315 @@ function toggleMixPlay() {
         Object.keys(CLIPS).forEach(key => { const b = document.getElementById('bar-'+key); if (b) b.style.width = '0%'; });
     }
 }
+
+/* ---- Saved compositions: stored + replayable through the mixer itself ---- */
+let savedCompositions = [];
+function renderSavedComps() {
+    const wrap = document.getElementById('savedComps');
+    wrap.innerHTML = '';
+    if (!savedCompositions.length) { wrap.innerHTML = '<p class="desc" style="margin:0;">No compositions saved yet — build a mix above and hit Save.</p>'; return; }
+    savedCompositions.forEach(entry => {
+        const row = document.createElement('div');
+        row.className = 'saved-comp';
+        const used = entry.keys.map(k => CLIPS[k].label).join(' + ');
+        row.innerHTML = '<span style="font-size:16px;">🎼</span><div><b>'+entry.name+'</b><br><span style="font-size:10.5px;color:var(--ink-soft)">'+used+'</span></div>' +
+            '<button class="btn xs outline" style="margin-left:auto;" onclick="viewSavedComposition(\''+entry.id+'\')">▶ View</button>' +
+            '<button class="sc-del" onclick="deleteSavedComposition(\''+entry.id+'\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
+        wrap.appendChild(row);
+    });
+}
+function viewSavedComposition(id) {
+    const entry = savedCompositions.find(e => e.id === id);
+    if (!entry) return;
+    Object.keys(CLIPS).forEach(key => {
+        mixState[key].on = entry.keys.includes(key);
+        const btn = document.getElementById('tog-'+key);
+        btn.classList.toggle('on', mixState[key].on);
+        btn.textContent = mixState[key].on ? '✓' : '+';
+    });
+    if (!mixPlaying) { mixPlaying = true; document.getElementById('mixPlayBtn').textContent = '⏸ Pause mix'; }
+    syncMixPlayers();
+    document.getElementById('mixerCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function deleteSavedComposition(id) {
+    savedCompositions = savedCompositions.filter(e => e.id !== id);
+    renderSavedComps();
+}
 function saveComposition() {
     const anyOn = Object.values(mixState).some(s => s.on);
     if (!anyOn) { alert('Turn on at least one clip before saving.'); return; }
     const name = document.getElementById('compName').value || 'Untitled composition';
-    const used = Object.keys(CLIPS).filter(k => mixState[k].on).map(k => CLIPS[k].label).join(' + ');
-    const wrap = document.getElementById('savedComps');
-    wrap.style.display = '';
-    const row = document.createElement('div');
-    row.className = 'saved-comp';
-    row.innerHTML = '<span style="font-size:16px;">🎼</span><div><b>'+name+'</b><br><span style="font-size:10.5px;color:var(--ink-soft)">'+used+'</span></div><button class="sc-del" onclick="this.parentElement.remove()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
-    wrap.prepend(row);
+    const keys = Object.keys(CLIPS).filter(k => mixState[k].on);
+    savedCompositions.unshift({ id: newId('mix'), name, keys });
+    renderSavedComps();
     document.getElementById('journeyComps').textContent = (parseInt(document.getElementById('journeyComps').textContent, 10) + 1);
     questDone.q4 = true; renderQuestCards();
 }
+renderSavedComps();
 
 /* =========================================================
-   Nature Cinema — sequence clips from any album group
+   Field Video Mixer & Nature Cinema
    ========================================================= */
+let recordedVideos = [];
+let videoMixSelection = [];
 let cinemaSelection = [];
+
+function createFieldDemoVideo(title, hue, iconText) {
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 320; canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        const stream = canvas.captureStream ? canvas.captureStream(25) : null;
+        if (!stream || typeof MediaRecorder === 'undefined') {
+            ctx.fillStyle = 'hsl(' + hue + ', 35%, 22%)';
+            ctx.fillRect(0, 0, 320, 200);
+            ctx.fillStyle = '#fff';
+            ctx.font = '28px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(iconText, 160, 90);
+            ctx.font = 'bold 13px sans-serif';
+            ctx.fillText(title, 160, 125);
+            const thumb = canvas.toDataURL('image/jpeg', 0.85);
+            recordedVideos.push({
+                id: newId('vid'),
+                name: title,
+                video: null,
+                videoThumb: thumb,
+                photo: thumb,
+                date: 'Demo clip',
+                category: 'sighting'
+            });
+            renderVideoMixer();
+            renderCinemaPickList();
+            return;
+        }
+        const rec = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks = [];
+        rec.ondataavailable = e => chunks.push(e.data);
+        let frame = 0;
+        const draw = () => {
+            if (frame > 75) { rec.stop(); return; }
+            ctx.fillStyle = 'hsl(' + hue + ', 38%, 20%)';
+            ctx.fillRect(0, 0, 320, 200);
+            ctx.fillStyle = 'hsla(' + (hue + 30) + ', 65%, 45%, 0.35)';
+            ctx.beginPath();
+            ctx.arc(160 + Math.sin(frame / 8) * 35, 100 + Math.cos(frame / 8) * 20, 50 + Math.sin(frame / 4) * 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = '30px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(iconText, 160, 85);
+            ctx.font = 'bold 13px Inter, sans-serif';
+            ctx.fillText(title, 160, 120);
+            ctx.font = '10px Inter, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillText('NATURA Field Cam · 0:0' + Math.floor(frame / 25), 160, 145);
+            frame++;
+            requestAnimationFrame(draw);
+        };
+        rec.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const thumb = canvas.toDataURL('image/jpeg', 0.85);
+            recordedVideos.push({
+                id: newId('vid'),
+                name: title,
+                video: url,
+                videoThumb: thumb,
+                date: 'Demo clip',
+                category: 'sighting'
+            });
+            renderVideoMixer();
+            renderCinemaPickList();
+        };
+        rec.start();
+        draw();
+    } catch (e) {
+        console.warn('Demo video fallback', e);
+    }
+}
+
+function renderVideoMixer() {
+    const grid = document.getElementById('videoMixGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (!recordedVideos.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1; padding:16px 10px; font-size:11.5px; color:var(--ink-soft); text-align:center; background:var(--panel); border:1px dashed var(--line); border-radius:10px;">' +
+            'No videos recorded yet.<br><span style="font-size:10.5px; color:var(--sand-deep);">Record a video on the <b>Listen</b> page, or create a demo field clip below.</span>' +
+            '<div style="margin-top:8px;"><button class="btn xs outline" onclick="seedDemoFieldVideo()">+ Generate Demo Video Clip</button></div>' +
+            '</div>';
+        renderVideoMixChips();
+        return;
+    }
+
+    recordedVideos.forEach((vid, idx) => {
+        const item = document.createElement('div');
+        const isSelected = videoMixSelection.some(s => s.id === vid.id);
+        item.className = 'video-mix-item' + (isSelected ? ' selected' : '');
+        item.innerHTML = '<div class="vm-thumb">' +
+            (vid.videoThumb ? '<img src="' + vid.videoThumb + '">' : '<video src="' + vid.video + '" muted></video>') +
+            '<span class="vm-badge">' + (isSelected ? '✓ In Mix' : 'Clip ' + (idx + 1)) + '</span>' +
+            '</div>' +
+            '<div class="vm-title">' + vid.name + '</div>';
+        item.onclick = () => toggleVideoMixItem(vid);
+        grid.appendChild(item);
+    });
+    renderVideoMixChips();
+}
+
+function toggleVideoMixItem(vid) {
+    const idx = videoMixSelection.findIndex(s => s.id === vid.id);
+    if (idx >= 0) {
+        videoMixSelection.splice(idx, 1);
+    } else {
+        videoMixSelection.push({ ...vid });
+    }
+    renderVideoMixer();
+}
+
+function renderVideoMixChips() {
+    const wrap = document.getElementById('videoMixChips');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    if (!videoMixSelection.length) {
+        wrap.innerHTML = '<span style="font-size:10.5px; color:var(--ink-soft); font-style:italic;">Tap clips above to sequence into your mix (ordered 1, 2, 3...)</span>';
+        return;
+    }
+    videoMixSelection.forEach((s, i) => {
+        const chip = document.createElement('div');
+        chip.className = 'video-mix-chip';
+        chip.innerHTML = (i + 1) + '. ' + s.name + ' <button onclick="removeVideoMixItem(\'' + s.id + '\')">×</button>';
+        wrap.appendChild(chip);
+    });
+}
+
+function removeVideoMixItem(id) {
+    videoMixSelection = videoMixSelection.filter(s => s.id !== id);
+    renderVideoMixer();
+}
+
+function seedDemoFieldVideo() {
+    const count = recordedVideos.length + 1;
+    const hue = count % 2 === 0 ? 140 : 200;
+    const title = count % 2 === 0 ? 'Meadow Flutter ' + count : 'River Current ' + count;
+    const icon = count % 2 === 0 ? '🌿' : '🌊';
+    createFieldDemoVideo(title, hue, icon);
+}
+
+function playVideoMix() {
+    if (!videoMixSelection.length) {
+        alert('Please select at least one recorded video from the grid above to mix.');
+        return;
+    }
+    stopCinema();
+    const trackSelect = document.getElementById('videoMixTrackSelect');
+    const ambientTrackKey = trackSelect ? trackSelect.value : 'none';
+
+    cinemaSelection = videoMixSelection.map(item => ({ ...item }));
+    renderCinemaChips();
+    renderCinemaPickList();
+
+    const stage = document.getElementById('cinemaStage');
+    if (stage) stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    cinemaPlaying = true;
+    if (ambientTrackKey !== 'none' && CLIPS[ambientTrackKey]) {
+        cinemaAudio = new Audio(CLIPS[ambientTrackKey].url);
+        cinemaAudio.loop = true;
+        cinemaAudio.play().catch(()=>{});
+    }
+
+    playCinemaFrame(0);
+}
+
+function saveVideoMix() {
+    if (!videoMixSelection.length) {
+        alert('Please select at least one recorded video to save this mix.');
+        return;
+    }
+    const nameInput = document.getElementById('videoMixName');
+    const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : ('Field Video Mix ' + (savedCinemas.length + 1));
+    const trackSelect = document.getElementById('videoMixTrackSelect');
+    const ambientTrack = trackSelect ? trackSelect.value : 'none';
+
+    const newMix = {
+        id: newId('cinema'),
+        name: name,
+        type: 'video_mix',
+        ambientTrack: ambientTrack,
+        items: videoMixSelection.map(item => ({ ...item })),
+        date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    };
+    savedCinemas.unshift(newMix);
+    renderSavedCinemas();
+
+    const countEl = document.getElementById('journeyCinemas');
+    if (countEl) countEl.textContent = parseInt(countEl.textContent, 10) + 1;
+
+    questDone.q4 = true;
+    renderQuestCards();
+
+    alert('🎬 Video Mix "' + name + '" saved to your Cinema collection!');
+    document.getElementById('savedCinemas').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function flattenAllSamples() {
     const items = [];
     albumGroups.forEach(group => {
         group.samples.forEach(sample => items.push({ groupCategory: group.category, sample }));
     });
+    recordedVideos.forEach(vid => {
+        if (!items.some(it => it.sample.video === vid.video)) {
+            items.push({ groupCategory: 'sighting', sample: vid });
+        }
+    });
     return items;
 }
+
 function renderCinemaPickList() {
     const list = document.getElementById('cinemaPickList');
+    if (!list) return;
     list.innerHTML = '';
-    flattenAllSamples().forEach(({ groupCategory, sample }) => {
+    const all = flattenAllSamples();
+    all.forEach(({ groupCategory, sample }) => {
         const row = document.createElement('div');
         row.className = 'cinema-pick-item';
         const checked = cinemaSelection.some(s => s.id === sample.id) ? 'checked' : '';
-        row.innerHTML = '<input type="checkbox" '+checked+'><div class="cp-art">'+sampleThumb(sample, groupCategory)+'</div><div>'+sample.name+'</div>';
+        row.innerHTML = '<input type="checkbox" ' + checked + '><div class="cp-art">' + sampleThumb(sample, groupCategory) + '</div><div>' + sample.name + '</div>';
         row.querySelector('input').onchange = (e) => { toggleCinemaItem(sample, groupCategory, e.target.checked); };
         row.onclick = (e) => { if (e.target.tagName !== 'INPUT') row.querySelector('input').click(); };
         list.appendChild(row);
     });
-    if (!flattenAllSamples().length) list.innerHTML = '<div style="padding:14px; font-size:11px; color:var(--ink-soft); text-align:center;">No recordings in your Album yet.</div>';
+    if (!all.length) list.innerHTML = '<div style="padding:14px; font-size:11px; color:var(--ink-soft); text-align:center;">No recordings in your Album yet.</div>';
 }
+
 function toggleCinemaItem(sample, groupCategory, on) {
-    if (on) { if (!cinemaSelection.some(s => s.id === sample.id)) cinemaSelection.push({ ...sample, groupCategory }); }
-    else { cinemaSelection = cinemaSelection.filter(s => s.id !== sample.id); }
+    if (on) {
+        if (!cinemaSelection.some(s => s.id === sample.id)) cinemaSelection.push({ ...sample, groupCategory });
+    } else {
+        cinemaSelection = cinemaSelection.filter(s => s.id !== sample.id);
+    }
     renderCinemaChips();
 }
+
 function renderCinemaChips() {
     const wrap = document.getElementById('cinemaChips');
+    if (!wrap) return;
     wrap.innerHTML = '';
     cinemaSelection.forEach((s, i) => {
         const chip = document.createElement('div');
         chip.className = 'cinema-chip';
-        chip.innerHTML = (i+1)+'. '+s.name+' <button onclick="removeCinemaItem(\''+s.id+'\')">×</button>';
+        chip.innerHTML = (i + 1) + '. ' + s.name + ' <button onclick="removeCinemaItem(\'' + s.id + '\')">×</button>';
         wrap.appendChild(chip);
     });
 }
+
 function removeCinemaItem(id) {
     cinemaSelection = cinemaSelection.filter(s => s.id !== id);
     renderCinemaChips();
     renderCinemaPickList();
 }
-renderCinemaPickList();
 
 let cinemaPlaying = false, cinemaTimer = null, cinemaAudio = null;
 function stopCinema() {
@@ -1413,48 +2049,122 @@ function stopCinema() {
     if (cinemaTimer) { clearTimeout(cinemaTimer); cinemaTimer = null; }
     if (cinemaAudio) { cinemaAudio.pause(); cinemaAudio = null; }
     const stage = document.getElementById('cinemaStage');
-    const v = stage.querySelector('video'); if (v) v.pause();
+    if (stage) {
+        const v = stage.querySelector('video'); if (v) v.pause();
+    }
 }
+
 function previewCinema() {
     if (!cinemaSelection.length) { alert('Select at least one clip from the list above.'); return; }
     stopCinema();
     cinemaPlaying = true;
     playCinemaFrame(0);
 }
+
 function playCinemaFrame(index) {
     if (!cinemaPlaying) return;
     const stage = document.getElementById('cinemaStage');
-    if (index >= cinemaSelection.length) { stage.innerHTML = '<span class="cs-empty">Cinema finished — Save it below, or Preview again.</span>'; cinemaPlaying = false; return; }
+    if (!stage) return;
+    if (index >= cinemaSelection.length) {
+        stage.innerHTML = '<div style="text-align:center; padding:18px 10px;"><span style="font-size:24px; display:block; margin-bottom:4px;">✨</span><b>Reel finished</b><p style="font-size:11px; color:var(--ink-soft); margin-top:4px;">Save it below, or Preview again.</p></div>';
+        cinemaPlaying = false;
+        if (cinemaAudio) { cinemaAudio.pause(); cinemaAudio = null; }
+        return;
+    }
     const item = cinemaSelection[index];
-    const caption = '<div class="cs-caption">'+(index+1)+' / '+cinemaSelection.length+' · '+item.name+'</div>';
+    const caption = '<div class="cs-caption">' + (index + 1) + ' / ' + cinemaSelection.length + ' · ' + item.name + '</div>';
     if (item.video) {
-        stage.innerHTML = '<video src="'+item.video+'" autoplay muted></video>' + caption;
+        stage.innerHTML = '<video src="' + item.video + '" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>' + caption;
         const v = stage.querySelector('video');
+        if (cinemaAudio) {
+            v.muted = true;
+        } else {
+            v.muted = false;
+        }
+        v.play().catch(() => {
+            v.muted = true;
+            v.play().catch(()=>{});
+        });
         v.onended = () => playCinemaFrame(index + 1);
+        cinemaTimer = setTimeout(() => {
+            if (cinemaPlaying && stage.querySelector('video') === v) {
+                playCinemaFrame(index + 1);
+            }
+        }, 10000);
     } else {
-        stage.innerHTML = (item.photo ? '<img src="'+item.photo+'">' : sceneArt((CATEGORY_META[item.groupCategory]||CATEGORY_META.unknown).scene)) + caption;
-        if (item.audioUrl) {
-            cinemaAudio = new Audio(item.audioUrl);
-            cinemaAudio.play().catch(()=>{});
-            cinemaAudio.onended = () => playCinemaFrame(index + 1);
+        stage.innerHTML = (item.photo ? '<img src="' + item.photo + '">' : sceneArt((CATEGORY_META[item.groupCategory] || CATEGORY_META.unknown).scene)) + caption;
+        if (item.audioUrl && !cinemaAudio) {
+            const clipAudio = new Audio(item.audioUrl);
+            clipAudio.play().catch(()=>{});
+            clipAudio.onended = () => playCinemaFrame(index + 1);
             cinemaTimer = setTimeout(() => { if (cinemaPlaying) playCinemaFrame(index + 1); }, 6000);
         } else {
-            cinemaTimer = setTimeout(() => playCinemaFrame(index + 1), 3000);
+            cinemaTimer = setTimeout(() => playCinemaFrame(index + 1), 3500);
         }
     }
 }
+
+let savedCinemas = [];
+function renderSavedCinemas() {
+    const wrap = document.getElementById('savedCinemas');
+    if (!wrap) return;
+    if (!savedCinemas.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+    wrap.style.display = '';
+    wrap.innerHTML = '';
+    savedCinemas.forEach(entry => {
+        const row = document.createElement('div');
+        row.className = 'saved-comp';
+        const icon = entry.type === 'video_mix' ? '🎥' : '🎬';
+        const label = entry.type === 'video_mix' ? 'Video Mix · ' : '';
+        row.innerHTML = '<span style="font-size:16px;">' + icon + '</span><div><b>' + entry.name + '</b><br><span style="font-size:10.5px;color:var(--ink-soft)">' + label + entry.items.length + ' clips</span></div>' +
+            '<button class="btn xs outline" style="margin-left:auto;" onclick="viewSavedCinema(\'' + entry.id + '\')">▶ View</button>' +
+            '<button class="sc-del" onclick="deleteSavedCinema(\'' + entry.id + '\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
+        wrap.appendChild(row);
+    });
+}
+
+function viewSavedCinema(id) {
+    const entry = savedCinemas.find(e => e.id === id);
+    if (!entry) return;
+    stopCinema();
+    cinemaSelection = entry.items.map(item => ({ ...item }));
+    renderCinemaChips();
+    renderCinemaPickList();
+
+    if (entry.ambientTrack && entry.ambientTrack !== 'none' && CLIPS[entry.ambientTrack]) {
+        cinemaAudio = new Audio(CLIPS[entry.ambientTrack].url);
+        cinemaAudio.loop = true;
+        cinemaAudio.play().catch(()=>{});
+    }
+
+    const stage = document.getElementById('cinemaStage');
+    if (stage) stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    cinemaPlaying = true;
+    playCinemaFrame(0);
+}
+
+function deleteSavedCinema(id) {
+    savedCinemas = savedCinemas.filter(e => e.id !== id);
+    renderSavedCinemas();
+}
+
 function saveCinema() {
     if (!cinemaSelection.length) { alert('Select at least one clip first.'); return; }
     const name = document.getElementById('cinemaName').value || 'Untitled cinema';
-    const wrap = document.getElementById('savedCinemas');
-    wrap.style.display = '';
-    const row = document.createElement('div');
-    row.className = 'saved-comp';
-    row.innerHTML = '<span style="font-size:16px;">🎬</span><div><b>'+name+'</b><br><span style="font-size:10.5px;color:var(--ink-soft)">'+cinemaSelection.length+' clips</span></div><button class="sc-del" onclick="this.parentElement.remove()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
-    wrap.prepend(row);
+    savedCinemas.unshift({ id: newId('cinema'), name, type: 'cinema', items: cinemaSelection.map(item => ({ ...item })) });
+    renderSavedCinemas();
     document.getElementById('journeyCinemas').textContent = (parseInt(document.getElementById('journeyCinemas').textContent, 10) + 1);
     questDone.q4 = true; renderQuestCards();
 }
+
+renderVideoMixer();
+renderCinemaPickList();
+renderSavedCinemas();
+
+setTimeout(() => {
+    createFieldDemoVideo("Hibiscus Bloom Flutter", 145, "🌺");
+    createFieldDemoVideo("Stream Current at Dusk", 200, "🌊");
+}, 250);
 </script>
 </body>
 </html>
@@ -1498,6 +2208,125 @@ class NaturaDashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(lessons).encode("utf-8"))
+        else:
+            self.send_error(404, "Not Found")
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        content_len = int(self.headers.get("Content-Length", 0))
+        post_body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+
+        if parsed.path == "/api/classify_audio":
+            try:
+                payload = json.loads(post_body.decode("utf-8"))
+                classifier = BioacousticClassifier()
+                pcm_data = payload.get("pcm")
+                sr = int(payload.get("sample_rate", 48000))
+                classifier.sample_rate = sr
+
+                if pcm_data and len(pcm_data) > 32:
+                    audio_arr = np.array(pcm_data, dtype=np.float32)
+                    res = classifier.classify(audio_arr)
+                    label = res.primary_label
+                    conf = res.confidence
+                    sci = res.scientific_name
+                    pattern = res.pattern_type
+                    feats = classifier.extract_features(audio_arr)
+                else:
+                    dom_freq = float(payload.get("dom_freq", 0))
+                    centroid = float(payload.get("centroid", 0))
+                    flatness = float(payload.get("flatness", 0))
+                    if 150 <= dom_freq <= 380:
+                        label = "honeybee_wingbeat"
+                        conf = 0.93
+                        sci = "Apis mellifera"
+                        pattern = "Harmonic wingbeat oscillation"
+                    elif 4000 <= dom_freq <= 8000:
+                        label = "tree_cricket_stridulation"
+                        conf = 0.91
+                        sci = "Oecanthus fultoni"
+                        pattern = "Rhythmic resonant stridulation"
+                    elif centroid > 12000 or dom_freq >= 16000:
+                        label = "ultrasonic_echolocation"
+                        conf = 0.89
+                        sci = "Pipistrellus pipistrellus"
+                        pattern = "Ultrasonic sweep"
+                    elif flatness > 0.75:
+                        label = "rain_percussion"
+                        conf = 0.85
+                        sci = "Hydrometeorological"
+                        pattern = "Broadband droplet impact"
+                    elif 1200 <= dom_freq <= 3800:
+                        label = "songbird_vocalization"
+                        conf = 0.87
+                        sci = "Passeriformes spp."
+                        pattern = "Avian whistle"
+                    else:
+                        label = "unknown_acoustic_event"
+                        conf = 0.50
+                        sci = "Incertae sedis"
+                        pattern = "Ambient nature"
+                    feats = {"dom_freq": dom_freq, "centroid": centroid, "flatness": flatness}
+
+                if "bee" in label:
+                    category = "bee"
+                    ui_label = "Bee-like hum"
+                elif "cricket" in label:
+                    category = "cricket"
+                    ui_label = "Cricket / insect chirp"
+                elif "echolocation" in label or "ultrasonic" in label:
+                    category = "bat"
+                    ui_label = "High-frequency bat echolocation"
+                elif "rain" in label or "droplet" in label:
+                    category = "rain"
+                    ui_label = "Rain / wind ambience"
+                elif "bird" in label or "songbird" in label:
+                    category = "bird"
+                    ui_label = "Bird song / whistle"
+                else:
+                    category = "unknown"
+                    ui_label = "Unclassified sound"
+
+                out = {
+                    "status": "ok",
+                    "category": category,
+                    "label": ui_label,
+                    "scientific_name": sci,
+                    "confidence": int(conf * 100),
+                    "pattern": pattern,
+                    "features": feats
+                }
+            except Exception as e:
+                out = {"status": "error", "message": str(e), "category": "unknown", "confidence": 50}
+
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(out).encode("utf-8"))
+
+        elif parsed.path == "/api/classify_image":
+            try:
+                payload = json.loads(post_body.decode("utf-8"))
+                rgba = payload.get("rgba", [])
+                w = int(payload.get("width", 0))
+                h = int(payload.get("height", 0))
+                classifier = VisionClassifier()
+                res = classifier.analyze_pixels(rgba, w, h)
+                out = {
+                    "status": "ok",
+                    "category": res.get("category", "non_botanical"),
+                    "confidence": int(res.get("confidence", 0.5) * 100),
+                    "label": res.get("label", "Unconfirmed"),
+                    "species": res.get("species", "Flora"),
+                    "reason": res.get("reason", "")
+                }
+            except Exception as e:
+                out = {"status": "error", "message": str(e), "category": "non_botanical", "confidence": 30}
+
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(out).encode("utf-8"))
         else:
             self.send_error(404, "Not Found")
 
