@@ -29,9 +29,17 @@ HTML_PAGE = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>NATURA — Multimodal Nature Explorer</title>
     <meta name="description" content="NATURA: on-device nature exploration. Hear the unheard, interpret nature, compose music, and learn nature's language.">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NATURA">
+    <meta name="theme-color" content="#2a4a2c">
+    <link rel="icon" type="image/svg+xml" href="/icon.svg">
+    <link rel="apple-touch-icon" href="/icon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -62,14 +70,59 @@ HTML_PAGE = r"""<!DOCTYPE html>
         button { font-family: inherit; }
         a { color: inherit; }
 
-        /* PHONE SHELL — fixed, standardized size; only the inner scroller scrolls */
-        #phone-wrap { height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; }
+        /* PHONE SHELL — fixed on wide desktop screens; full-bleed native app on mobile & PWA */
+        #phone-wrap { height: 100vh; height: 100dvh; width: 100vw; display: flex; align-items: center; justify-content: center; }
         #app { width: var(--phone-w); height: var(--phone-h); max-height: 94vh; background: var(--bg); position: relative; display: flex; flex-direction: column; border-radius: 34px; overflow: hidden; box-shadow: 0 20px 60px rgba(30,25,10,0.35); border: 8px solid #171a12; flex-shrink: 0; }
 
         .statusbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 22px 2px; font-size: 12px; font-weight: 700; color: var(--ink); flex-shrink: 0; }
         .topbar { display: flex; align-items: center; gap: 9px; padding: 6px 18px 12px; flex-shrink: 0; }
         .topbar .mark { width: 24px; height: 24px; color: var(--moss); flex-shrink: 0; }
         .topbar span { font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; letter-spacing: 0.4px; color: var(--moss-deep); }
+
+        /* NATIVE MOBILE APP ADAPTATION (Any Phone & Standalone PWA) */
+        @media (max-width: 600px), (display-mode: standalone), (max-device-width: 600px) {
+            html, body {
+                background: var(--bg) !important;
+                height: 100% !important;
+                height: 100dvh !important;
+                overflow: hidden !important;
+            }
+            #phone-wrap {
+                height: 100% !important;
+                height: 100dvh !important;
+                width: 100% !important;
+                display: block !important;
+            }
+            #app {
+                width: 100% !important;
+                width: 100vw !important;
+                max-width: 100% !important;
+                height: 100% !important;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+                border-radius: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            .statusbar {
+                display: none !important; /* Mobile devices already show native system bar */
+            }
+            .topbar {
+                padding-top: max(10px, env(safe-area-inset-top)) !important;
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+            .bottomnav {
+                padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+            .page {
+                padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+            }
+        }
+
+        .pwa-install-banner { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #f2faed, #e6f2de); border: 1.5px solid var(--moss-soft); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(42,74,44,0.08); }
 
         main { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .page { display: none; padding: 6px 18px 100px; min-height: 100%; }
@@ -341,11 +394,28 @@ HTML_PAGE = r"""<!DOCTYPE html>
             <path d="M50 6c15 6 21 19 14 33-4-2-8-5-10-9 6-2 8-8 5-15-5 4-9 11-7 19-7-6-9-17-5-27 1-0.5 2-1 3-1Z" fill="currentColor"/>
         </svg>
         <span>NATURA</span>
+        <button id="installAppBtn" class="btn xs gold" style="display:none; margin-left:auto; font-size:10.5px; padding:3px 9px; font-weight:700; border-radius:999px; gap:4px; align-items:center;" onclick="triggerAppInstall()">
+            <span>📲</span><span>Install App</span>
+        </button>
     </div>
 
     <main>
         <!-- PAGE 1: LISTEN -->
         <section id="page-listen" class="page active">
+            <div id="pwaBanner" class="pwa-install-banner">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:20px;">📲</span>
+                    <div>
+                        <div style="font-weight:700; font-size:11.5px; color:var(--moss-deep);">Install NATURA on Your Phone</div>
+                        <div style="font-size:10px; color:var(--ink-soft);">Run full-screen like a mobile app with offline biophony</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <button class="btn xs gold" style="font-size:10.5px; padding:3px 9px;" onclick="triggerAppInstall()">Install</button>
+                    <button style="background:none; border:none; color:var(--ink-soft); font-size:14px; cursor:pointer; padding:2px;" onclick="document.getElementById('pwaBanner').style.display='none'">✕</button>
+                </div>
+            </div>
+
             <div class="hero">
                 <svg class="leafart" viewBox="0 0 32 32" fill="none"><path d="M16 3c6 4 11 9 11 15.5A11 11 0 1 1 5 18.5C5 12 10 7 16 3Z" stroke="#fff" stroke-width="1"/></svg>
                 <div class="hero-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>Field Bioacoustics</div>
@@ -649,7 +719,20 @@ HTML_PAGE = r"""<!DOCTYPE html>
                 <button class="btn block" onclick="confirmSaveModal()">Save to Album</button>
             </div>
         </div>
+        <div class="modal-backdrop" id="installModalBackdrop" onclick="if(event.target===this)closeInstallModal()">
+        <div class="modal" style="border-radius: 22px 22px 0 0;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                <div style="width:42px; height:42px; border-radius:12px; background:var(--moss-deep); display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px;">🌿</div>
+                <div>
+                    <h3 style="margin:0; font-size:16px;">Install NATURA App</h3>
+                    <span style="font-size:11px; color:var(--ink-soft);">Run full-screen on your phone's home screen</span>
+                </div>
+            </div>
+            <div id="installGuideText" style="font-size:12px; line-height:1.65; color:var(--ink); margin-bottom:16px;"></div>
+            <button class="btn block" onclick="closeInstallModal()">Got it</button>
+        </div>
     </div>
+</div>
 </div>
 </div>
 
@@ -659,6 +742,91 @@ setTimeout(() => {
     const splash = document.getElementById('splash');
     if (splash) splash.classList.add('hide');
 }, 3600);
+
+/* =========================================================
+   PWA & Mobile App Installation
+   ========================================================= */
+let deferredPrompt = null;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg error:', err));
+    });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('installAppBtn');
+    if (btn && !isStandalone) btn.style.display = 'inline-flex';
+    const banner = document.getElementById('pwaBanner');
+    if (banner && !isStandalone) banner.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    const btn = document.getElementById('installAppBtn');
+    if (btn) btn.style.display = 'none';
+    const banner = document.getElementById('pwaBanner');
+    if (banner) banner.style.display = 'none';
+});
+
+function triggerAppInstall() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                const btn = document.getElementById('installAppBtn');
+                if (btn) btn.style.display = 'none';
+                const banner = document.getElementById('pwaBanner');
+                if (banner) banner.style.display = 'none';
+            }
+            deferredPrompt = null;
+        });
+    } else {
+        showInstallModal();
+    }
+}
+
+function showInstallModal() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const textEl = document.getElementById('installGuideText');
+    if (isIOS) {
+        textEl.innerHTML = '<b>Install on iPhone / iPad (Safari):</b><br>' +
+            '1. Tap the <b>Share</b> button <span style="font-size:15px;">⎋</span> at bottom of Safari.<br>' +
+            '2. Scroll down and tap <b>"Add to Home Screen"</b> <span style="font-size:15px;">⊞</span>.<br>' +
+            '3. Tap <b>"Add"</b> at the top right.<br><br>' +
+            '<span style="color:var(--moss-deep); font-weight:600;">NATURA will install directly as a native app on your home screen!</span>';
+    } else if (isAndroid) {
+        textEl.innerHTML = '<b>Install on Android (Chrome / Edge):</b><br>' +
+            '1. Tap the menu <b>⋮</b> (three dots) at top right.<br>' +
+            '2. Tap <b>"Install app"</b> or <b>"Add to Home screen"</b>.<br>' +
+            '3. Tap <b>"Install"</b>.<br><br>' +
+            '<span style="color:var(--moss-deep); font-weight:600;">Android will compile a WebAPK with its own launcher icon and run full-screen!</span>';
+    } else {
+        textEl.innerHTML = '<b>Install on Mobile or Desktop:</b><br>' +
+            '1. Open this link on your phone (Chrome, Safari, or Edge).<br>' +
+            '2. Tap the <b>"Install App"</b> button or browser menu &rarr; <b>"Install App"</b>.<br>' +
+            '3. Confirm to install NATURA to your home screen.<br><br>' +
+            '<span style="color:var(--moss-deep); font-weight:600;">Runs seamlessly without browser address bars!</span>';
+    }
+    document.getElementById('installModalBackdrop').classList.add('open');
+}
+
+function closeInstallModal() {
+    document.getElementById('installModalBackdrop').classList.remove('open');
+}
+
+if (!isStandalone) {
+    setTimeout(() => {
+        const btn = document.getElementById('installAppBtn');
+        if (btn) btn.style.display = 'inline-flex';
+        const banner = document.getElementById('pwaBanner');
+        if (banner) banner.style.display = 'flex';
+    }, 3800);
+}
 
 /* =========================================================
    Reference field clips (real audio files served by the app)
@@ -2208,6 +2376,84 @@ class NaturaDashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(lessons).encode("utf-8"))
+        elif parsed.path in ("/manifest.json", "/manifest.webmanifest"):
+            manifest = {
+                "name": "NATURA — AI Multimodal Nature Explorer",
+                "short_name": "NATURA",
+                "description": "On-device multimodal nature explorer. Bioacoustics, camera vision, and soundscape cinema.",
+                "start_url": "/",
+                "display": "standalone",
+                "background_color": "#f6f2ea",
+                "theme_color": "#2a4a2c",
+                "orientation": "portrait",
+                "icons": [
+                    {
+                        "src": "/icon.svg",
+                        "sizes": "any",
+                        "type": "image/svg+xml",
+                        "purpose": "any maskable"
+                    },
+                    {
+                        "src": "/icon-192.png",
+                        "sizes": "192x192",
+                        "type": "image/svg+xml",
+                        "purpose": "any maskable"
+                    },
+                    {
+                        "src": "/icon-512.png",
+                        "sizes": "512x512",
+                        "type": "image/svg+xml",
+                        "purpose": "any maskable"
+                    }
+                ]
+            }
+            data = json.dumps(manifest, indent=2).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-type", "application/manifest+json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        elif parsed.path == "/sw.js":
+            sw_code = (
+                "const CACHE_NAME = 'natura-pwa-v1';\n"
+                "const ASSETS = ['/', '/manifest.json'];\n"
+                "self.addEventListener('install', e => {\n"
+                "  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));\n"
+                "  self.skipWaiting();\n"
+                "});\n"
+                "self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));\n"
+                "self.addEventListener('fetch', e => {\n"
+                "  if (e.request.method !== 'GET') return;\n"
+                "  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));\n"
+                "});\n"
+            ).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-type", "application/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(sw_code)))
+            self.end_headers()
+            self.wfile.write(sw_code)
+        elif parsed.path in ("/icon.svg", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"):
+            icon_svg = (
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">'
+                '<rect width="512" height="512" rx="120" fill="#2a4a2c"/>'
+                '<g transform="translate(106, 106) scale(3)" stroke="none" fill="#f6f2ea">'
+                '<rect x="2" y="48" width="3.4" height="18" rx="1.7" fill="#f6f2ea" opacity="0.85"/>'
+                '<rect x="9" y="42" width="3.4" height="30" rx="1.7" fill="#f6f2ea" opacity="0.85"/>'
+                '<rect x="16" y="35" width="3.4" height="44" rx="1.7" fill="#f6f2ea" opacity="0.85"/>'
+                '<rect x="80.6" y="35" width="3.4" height="44" rx="1.7" fill="#f6f2ea" opacity="0.85"/>'
+                '<rect x="87.6" y="42" width="3.4" height="30" rx="1.7" fill="#f6f2ea" opacity="0.85"/>'
+                '<rect x="94.6" y="48" width="3.4" height="18" rx="1.7" fill="#f6f2ea" opacity="0.85"/>'
+                '<circle cx="50" cy="58" r="29" fill="none" stroke="#f6f2ea" stroke-width="2.2"/>'
+                '<path d="M50 43c7 3 10 10 6 18-7-2-12-9-12-15 0-1.5 2.5-3.5 6-3Z" fill="#f6f2ea"/>'
+                '<path d="M50 6c15 6 21 19 14 33-4-2-8-5-10-9 6-2 8-8 5-15-5 4-9 11-7 19-7-6-9-17-5-27 1-0.5 2-1 3-1Z" fill="#f6f2ea"/>'
+                '</g>'
+                '</svg>'
+            ).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-type", "image/svg+xml")
+            self.send_header("Content-Length", str(len(icon_svg)))
+            self.end_headers()
+            self.wfile.write(icon_svg)
         else:
             self.send_error(404, "Not Found")
 
