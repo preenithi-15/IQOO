@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NATURA — AI Multimodal Nature Explorer | Launch & Download Portal</title>
+    <meta name="description" content="Download and run NATURA, an AI-powered multimodal nature explorer for iQOO 15 and all smartphones. Hear ultrasonic nature, discover biophony, and compose generative soundscapes.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --moss-deep: #1f3d24;
+            --moss: #2e5932;
+            --moss-mid: #417546;
+            --moss-soft: #e3eedc;
+            --moss-light: #f2f7ef;
+            --sand: #d4c5a3;
+            --sand-soft: #f7f4ee;
+            --amber: #d98a2b;
+            --amber-dark: #b86e18;
+            --ink: #192419;
+            --ink-soft: #526353;
+            --card-border: #dfe8d8;
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 10px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--sand-soft);
+            color: var(--ink);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(247, 244, 238, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 14px 24px;
+        }
+        .nav-container {
+            max-width: 1160px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--moss-deep);
+        }
+        .brand svg { width: 32px; height: 32px; color: var(--moss); }
+        .brand-title {
+            font-family: 'Fraunces', serif;
+            font-weight: 700;
+            font-size: 22px;
+            letter-spacing: -0.3px;
+        }
+        .brand-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            background: var(--moss-soft);
+            color: var(--moss-deep);
+            padding: 3px 8px;
+            border-radius: 999px;
+            margin-left: 4px;
+        }
+
+        .nav-cta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 12px 22px;
+            border-radius: 999px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            white-space: nowrap;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(31,61,36,0.18);
+        }
+        .btn:active { transform: translateY(0); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--moss), var(--moss-deep));
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(31,61,36,0.25);
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, var(--amber), var(--amber-dark));
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(217,138,43,0.3);
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--moss-deep);
+            border: 2px solid var(--moss);
+        }
+        .btn-outline:hover { background: var(--moss-soft); }
+        .btn-sm { padding: 8px 16px; font-size: 12.5px; }
+        .btn-lg { padding: 15px 30px; font-size: 16px; }
+
+        .container {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* HERO */
+        .hero-section {
+            padding: 56px 0 40px;
+            text-align: center;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--moss-deep);
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27ae60;
+            box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(39, 174, 96, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
+        }
+
+        .hero-title {
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 48px;
+            line-height: 1.15;
+            color: var(--moss-deep);
+            font-weight: 700;
+            max-width: 860px;
+            margin: 0 auto 18px;
+            letter-spacing: -0.5px;
+        }
+        .hero-subtitle {
+            font-size: 18px;
+            color: var(--ink-soft);
+            max-width: 720px;
+            margin: 0 auto 36px;
+            line-height: 1.6;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 48px;
+        }
+
+        /* QR + FAST LAUNCH CARD */
+        .launch-card {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: 0 12px 40px rgba(31,61,36,0.08);
+            max-width: 860px;
+            margin: 0 auto 60px;
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 36px;
+            align-items: center;
+            text-align: left;
+        }
+        .qr-wrap {
+            text-align: center;
+            background: var(--moss-light);
+            border: 1.5px dashed var(--moss);
+            border-radius: var(--radius-md);
+            padding: 16px;
+        }
+        .qr-wrap img {
+            width: 190px;
+            height: 190px;
+            display: block;
+            margin: 0 auto 10px;
+            border-radius: 8px;
+        }
+        .qr-caption {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--moss-deep);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .launch-content h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 26px;
+            color: var(--moss-deep);
+            margin-bottom: 10px;
+        }
+        .launch-content p {
+            font-size: 14.5px;
+            color: var(--ink-soft);
+            margin-bottom: 20px;
+        }
+        .launch-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .launch-feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--moss-deep);
+        }
+        .launch-feature-item span { font-size: 16px; }
+
+        /* SECTION TITLES */
+        .section-header {
+            text-align: center;
+            margin: 60px 0 36px;
+        }
+        .section-tag {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.6px;
+            color: var(--amber-dark);
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+        .section-title {
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 34px;
+            color: var(--moss-deep);
+            font-weight: 700;
+        }
+
+        /* SCREENSHOT GALLERY */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+        .gallery-card {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .gallery-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(31,61,36,0.12);
+        }
+        .gallery-img-wrap {
+            height: 280px;
+            background: #e8e3d8;
+            overflow: hidden;
+            position: relative;
+        }
+        .gallery-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top center;
+            transition: transform 0.3s ease;
+        }
+        .gallery-card:hover .gallery-img-wrap img {
+            transform: scale(1.03);
+        }
+        .gallery-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(31,61,36,0.85);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            backdrop-filter: blur(4px);
+        }
+        .gallery-info {
+            padding: 18px 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .gallery-info h4 {
+            font-family: 'Fraunces', serif;
+            font-size: 18px;
+            color: var(--moss-deep);
+            margin-bottom: 6px;
+        }
+        .gallery-info p {
+            font-size: 13px;
+            color: var(--ink-soft);
+            line-height: 1.5;
+        }
+
+        /* INSTALL GUIDE SECTION */
+        .guide-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+        .guide-card {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 26px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+        }
+        .guide-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--moss-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 16px;
+        }
+        .guide-card h4 {
+            font-family: 'Fraunces', serif;
+            font-size: 19px;
+            color: var(--moss-deep);
+            margin-bottom: 12px;
+        }
+        .guide-steps {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+        .guide-steps li {
+            counter-increment: step-counter;
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 12px;
+            font-size: 13.5px;
+            color: var(--ink-soft);
+        }
+        .guide-steps li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--moss);
+            color: #fff;
+            font-size: 10.5px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* FOOTER */
+        footer {
+            background: var(--moss-deep);
+            color: #e5ecd8;
+            padding: 48px 24px;
+            margin-top: 80px;
+        }
+        .footer-content {
+            max-width: 1160px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding-bottom: 32px;
+            margin-bottom: 24px;
+        }
+        .footer-brand h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 24px;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+        .footer-brand p {
+            font-size: 13.5px;
+            color: #b5c7ad;
+            max-width: 480px;
+        }
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .footer-links a {
+            color: #f7f4ee;
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--amber); }
+        .footer-bottom {
+            max-width: 1160px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #8fa687;
+        }
+
+        @media (max-width: 900px) {
+            .hero-title { font-size: 34px; }
+            .launch-card { grid-template-columns: 1fr; text-align: center; }
+            .qr-wrap { max-width: 240px; margin: 0 auto; }
+            .launch-features { grid-template-columns: 1fr; }
+            .gallery-grid { grid-template-columns: 1fr; }
+            .guide-grid { grid-template-columns: 1fr; }
+            .nav-cta .btn-outline { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="nav-container">
+            <a href="#" class="brand">
+                <svg viewBox="0 0 100 100" fill="none">
+                    <rect x="2" y="48" width="3.4" height="18" rx="1.7" fill="currentColor" opacity="0.85"/>
+                    <rect x="9" y="42" width="3.4" height="30" rx="1.7" fill="currentColor" opacity="0.85"/>
+                    <rect x="16" y="35" width="3.4" height="44" rx="1.7" fill="currentColor" opacity="0.85"/>
+                    <rect x="80.6" y="35" width="3.4" height="44" rx="1.7" fill="currentColor" opacity="0.85"/>
+                    <rect x="87.6" y="42" width="3.4" height="30" rx="1.7" fill="currentColor" opacity="0.85"/>
+                    <rect x="94.6" y="48" width="3.4" height="18" rx="1.7" fill="currentColor" opacity="0.85"/>
+                    <circle cx="50" cy="58" r="29" fill="none" stroke="currentColor" stroke-width="2.2"/>
+                    <path d="M50 43c7 3 10 10 6 18-7-2-12-9-12-15 0-1.5 2.5-3.5 6-3Z" fill="currentColor"/>
+                    <path d="M50 6c15 6 21 19 14 33-4-2-8-5-10-9 6-2 8-8 5-15-5 4-9 11-7 19-7-6-9-17-5-27 1-0.5 2-1 3-1Z" fill="currentColor"/>
+                </svg>
+                <span class="brand-title">NATURA</span>
+                <span class="brand-badge">iQOO 15</span>
+            </a>
+            <div class="nav-cta">
+                <a href="https://github.com/preenithi-15/IQOO" target="_blank" class="btn btn-outline btn-sm">GitHub Repo</a>
+                <a href="https://natura-hgb4.onrender.com/?mode=app" target="_blank" class="btn btn-primary btn-sm">🚀 Launch App</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero-section">
+            <div class="container">
+                <div class="status-pill">
+                    <span class="status-dot"></span>
+                    <span>Backend Server: <strong>Online & Ready on Render</strong></span>
+                </div>
+
+                <h1 class="hero-title">Hear the Unheard. Explore Nature Beyond the Screen.</h1>
+                <p class="hero-subtitle">NATURA turns your smartphone into an AI-powered bioacoustic explorer. Built for the Snapdragon 8 Elite Gen 5 and accessible on any Android or iOS device.</p>
+
+                <div class="hero-actions">
+                    <a href="https://natura-hgb4.onrender.com/?mode=app" target="_blank" class="btn btn-primary btn-lg">
+                        <span>📱</span> Launch Mobile App Now
+                    </a>
+                    <a href="#install-guide" class="btn btn-gold btn-lg">
+                        <span>📲</span> Download & Install on Phone
+                    </a>
+                    <a href="https://www.pwabuilder.com?url=https://natura-hgb4.onrender.com/" target="_blank" class="btn btn-outline btn-lg">
+                        <span>📦</span> Generate Android APK
+                    </a>
+                </div>
+
+                <!-- FAST LAUNCH & QR CARD -->
+                <div class="launch-card">
+                    <div class="qr-wrap">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https%3A%2F%2Fnatura-hgb4.onrender.com%2F&color=1f3d24&bgcolor=f2f7ef" alt="Scan to Launch NATURA on Phone">
+                        <div class="qr-caption">Scan with Phone Camera</div>
+                    </div>
+                    <div class="launch-content">
+                        <h3>Test On Your Phone in Seconds</h3>
+                        <p>No app store installation required. Open in Google Chrome, Safari, or Samsung Internet to run natively full-screen with on-device bioacoustics.</p>
+                        <div class="launch-features">
+                            <div class="launch-feature-item"><span>⚡</span> Multi-Sensor Audio & Vision</div>
+                            <div class="launch-feature-item"><span>🦇</span> Ultrasonic Sonification (Heterodyne)</div>
+                            <div class="launch-feature-item"><span>🧠</span> Grounded 3-Layer Nature AI</div>
+                            <div class="launch-feature-item"><span>🎬</span> Nature Cinema & Video Mixer</div>
+                        </div>
+                        <a href="https://natura-hgb4.onrender.com/?mode=app" target="_blank" class="btn btn-primary">
+                            Open https://natura-hgb4.onrender.com &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREENSHOT GALLERY -->
+        <section class="container">
+            <div class="section-header">
+                <div class="section-tag">Full Application Walkthrough</div>
+                <h2 class="section-title">Everything You Can Do in NATURA</h2>
+            </div>
+
+            <div class="gallery-grid">
+                <div class="gallery-card">
+                    <div class="gallery-img-wrap">
+                        <span class="gallery-badge">01. Listen</span>
+                        <img src="docs/screenshots/01_listen_live.png" alt="Live Bioacoustic Capture">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Live Bioacoustic Capture</h4>
+                        <p>Record audio, photos, and video simultaneously with real-time heterodyne ultrasonic shifting and an acoustic timeline.</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-img-wrap">
+                        <span class="gallery-badge">02. Album</span>
+                        <img src="docs/screenshots/02_album_grid.png" alt="Nature Album">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Nature Album ("My Nature")</h4>
+                        <p>Visual catalogue and discovery statistics tracking all verified encounters, soundscapes, and field sightings.</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-img-wrap">
+                        <span class="gallery-badge">03. Interpret</span>
+                        <img src="docs/screenshots/03_moment_detail.png" alt="Nature Interpretation">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Grounded Nature Interpretation</h4>
+                        <p>3-layer scientific AI reasoning comparing raw, filtered, and sonified audio representations with confidence scores.</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-img-wrap">
+                        <span class="gallery-badge">04. Learn</span>
+                        <img src="docs/screenshots/04_learn_guide.png" alt="Nature Language Guide">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Nature Language Guide</h4>
+                        <p>Interactive biophony lessons explaining insect wingbeats, cricket stridulation, plant vibrations, and bat ultrasound.</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-img-wrap">
+                        <span class="gallery-badge">05. Quest</span>
+                        <img src="docs/screenshots/05_nature_quest.png" alt="10-Minute Nature Quest">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>10-Minute Nature Quest</h4>
+                        <p>Gamified micro-exploration challenges featuring real-time AI verification, procedural round generation, and skip controls.</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-img-wrap">
+                        <span class="gallery-badge">06. Compose</span>
+                        <img src="docs/screenshots/06_compose_mixer.png" alt="Field Video Mixer">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Field Video Mixer & Cinema</h4>
+                        <p>Multi-track video sequencer allowing users to arrange field recordings over ambient generative natural soundscapes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- INSTALL GUIDE -->
+        <section class="container" id="install-guide">
+            <div class="section-header">
+                <div class="section-tag">Native Phone Installation</div>
+                <h2 class="section-title">How to Install NATURA as a Mobile App</h2>
+            </div>
+
+            <div class="guide-grid">
+                <div class="guide-card">
+                    <div class="guide-icon">🤖</div>
+                    <h4>Android (Chrome, Edge, Samsung)</h4>
+                    <ol class="guide-steps">
+                        <li>Open <a href="https://natura-hgb4.onrender.com/" target="_blank"><strong>https://natura-hgb4.onrender.com</strong></a> in Chrome.</li>
+                        <li>Tap the <strong>"📲 Install App"</strong> button at the top banner (or browser menu ⋮ &rarr; <strong>Install App</strong>).</li>
+                        <li>Tap <strong>"Install"</strong>. Android compiles a native <strong>WebAPK</strong> that runs full-screen without browser bars.</li>
+                    </ol>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-icon">🍎</div>
+                    <h4>iPhone & iPad (Safari)</h4>
+                    <ol class="guide-steps">
+                        <li>Open <a href="https://natura-hgb4.onrender.com/" target="_blank"><strong>https://natura-hgb4.onrender.com</strong></a> in <strong>Safari</strong>.</li>
+                        <li>Tap the <strong>Share</strong> button (📤 / ⎋) at the bottom toolbar.</li>
+                        <li>Scroll down and tap <strong>"Add to Home Screen"</strong> (➕), then tap <strong>Add</strong> in the top right.</li>
+                        <li>NATURA is now on your home screen and launches in standalone full-screen mode!</li>
+                    </ol>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-icon">📦</div>
+                    <h4>Standalone APK Package (.apk)</h4>
+                    <ol class="guide-steps">
+                        <li>Visit <a href="https://www.pwabuilder.com?url=https://natura-hgb4.onrender.com/" target="_blank"><strong>PWABuilder.com</strong></a>.</li>
+                        <li>The tool will automatically package NATURA's live manifest.</li>
+                        <li>Click <strong>"Package for Android"</strong> to download a signed <code>app-release.apk</code> package to install on any phone.</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3>NATURA — AI Multimodal Nature Explorer</h3>
+                <p>Turn your smartphone into a bridge to the natural world. Developed for the iQOO 15 with Snapdragon 8 Elite Gen 5 NPU acceleration.</p>
+            </div>
+            <div class="footer-links">
+                <a href="https://natura-hgb4.onrender.com/?mode=app" target="_blank">🚀 Live App</a>
+                <a href="https://youtu.be/wUA6s3Jvt-o" target="_blank">🎥 Video Walkthrough</a>
+                <a href="https://drive.google.com/drive/folders/1dnt8lG0pz2dyoeDbunn7MX5NnACevtVf?usp=sharing" target="_blank">📁 Google Drive</a>
+                <a href="https://github.com/preenithi-15/IQOO" target="_blank">💻 GitHub Repository</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>Built for iQOO 15 AI Nature Hackathon</span>
+            <span>Live Cloud Deployment on Render</span>
+        </div>
+    </footer>
+
+</body>
+</html>

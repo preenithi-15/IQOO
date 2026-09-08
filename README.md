@@ -9,7 +9,8 @@ NATURA turns the **iQOO 15** into an AI-powered multimodal nature explorer. It u
 
 | Resource | Link | Description |
 |---|---|---|
-| 📱 **Live Mobile & Cloud Web App** | [natura-hgb4.onrender.com](https://natura-hgb4.onrender.com/) | High-speed cloud deployment — opens directly as an installable mobile app on phones and desktop |
+| 🌐 **Public Download & App Portal (GitHub Page)** | [preenithi-15.github.io/IQOO](https://preenithi-15.github.io/IQOO/) | Shareable public portal with 1-click app launch, phone QR code, screenshots & download links |
+| 📱 **Live Mobile & Cloud Web App (Render)** | [natura-hgb4.onrender.com](https://natura-hgb4.onrender.com/) | Direct cloud backend — opens and runs end-to-end as an installable app |
 | 🎥 **Video Walkthrough (YouTube)** | [youtu.be/wUA6s3Jvt-o](https://youtu.be/wUA6s3Jvt-o) | Official demo video and feature walkthrough |
 | 📁 **Deck & Documentation (Google Drive)** | [Google Drive Folder](https://drive.google.com/drive/folders/1dnt8lG0pz2dyoeDbunn7MX5NnACevtVf?usp=sharing) | Presentation deck, submission documentation, and project assets |
 
