@@ -53,3 +53,32 @@ python demo/run_demo.py
 python -m app.ui.web_dashboard --port 8080
 ```
 Open `http://localhost:8080` in your browser.
+
+---
+
+## 4. Application Walkthrough & Screenshots
+
+### 1. Live Bioacoustic Capture & Processing
+![Live Bioacoustic Capture](docs/screenshots/01_listen_live.png)
+*Real-time multi-sensor field recording (audio, photo, and video) with heterodyne ultrasonic sonification and an interactive acoustic timeline.*
+
+### 2. Nature Album ("My Nature")
+![Nature Album](docs/screenshots/02_album_grid.png)
+*Organized visual catalogue and discovery statistics showcasing all saved nature moments, sightings, and acoustic records.*
+
+### 3. Grounded Nature Interpretation
+![Nature Interpretation Detail](docs/screenshots/03_moment_detail.png)
+*In-depth 3-layer scientific analysis comparing raw, filtered, and sonified audio representations with evidence-grounded confidence scores.*
+
+### 4. Nature Language Learning Guide
+![Nature Language Guide](docs/screenshots/04_learn_guide.png)
+*Interactive biophony education covering insect wingbeats, cricket stridulation, plant cavitation vibrations, and ultrasonic bat echolocation.*
+
+### 5. 10-Minute Nature Quest
+![Nature Quest](docs/screenshots/05_nature_quest.png)
+*Gamified micro-exploration missions featuring real-time AI verification, procedural round generation, and step-skipping capabilities.*
+
+### 6. Field Video Mixer & Nature Cinema
+![Nature Composer & Video Mixer](docs/screenshots/06_compose_mixer.png)
+*Creative studio for sequencing field video captures, layering natural soundscapes, and generating harmonious nature cinema montages.*
+
