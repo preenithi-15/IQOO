@@ -9,8 +9,7 @@ NATURA turns the **iQOO 15** into an AI-powered multimodal nature explorer. It u
 
 | Resource | Link | Description |
 |---|---|---|
-| 🌐 **Live Cloud App (Render)** | [natura.onrender.com](https://natura.onrender.com) | Always-on cloud web deployment |
-| 🚀 **Deploy to Render (1-Click)** | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/preenithi-15/IQOO) | One-click automatic cloud deployment |
+| 🌐 **Live Cloud App (Render)** | [natura-hgb4.onrender.com](https://natura-hgb4.onrender.com/) | Always-on cloud web deployment |
 | 📱 **Live Mobile Web App (Tunnel)** | [neat-chicken-77.loca.lt](https://neat-chicken-77.loca.lt) | Direct mobile-friendly tunnel *(Password if prompted: `180.235.122.218`)* |
 | 🎥 **Video Walkthrough (YouTube)** | [youtu.be/wUA6s3Jvt-o](https://youtu.be/wUA6s3Jvt-o) | Official demo video and feature walkthrough |
 | 📁 **Deck & Documentation (Google Drive)** | [Google Drive Folder](https://drive.google.com/drive/folders/1dnt8lG0pz2dyoeDbunn7MX5NnACevtVf?usp=sharing) | Presentation deck, submission documentation, and project assets |
@@ -22,13 +21,13 @@ NATURA turns the **iQOO 15** into an AI-powered multimodal nature explorer. It u
 NATURA is fully optimized as an installable **Progressive Web App (PWA / WebAPK)** with responsive mobile-first UI (`100dvh`), offline caching, and access to device hardware (camera, microphone, accelerometer).
 
 ### 🤖 On Android (Google Chrome, Microsoft Edge, Samsung Internet, Brave)
-1. Open the mobile link on your phone: **[https://neat-chicken-77.loca.lt](https://neat-chicken-77.loca.lt)** *(If localtunnel asks for a password, enter `180.235.122.218` and tap Click to Submit)* or the cloud link **[https://natura.onrender.com](https://natura.onrender.com)**.
+1. Open the mobile link on your phone: **[https://neat-chicken-77.loca.lt](https://neat-chicken-77.loca.lt)** *(If localtunnel asks for a password, enter `180.235.122.218` and tap Click to Submit)* or the cloud link **[https://natura-hgb4.onrender.com/](https://natura-hgb4.onrender.com/)**.
 2. Tap the **"📲 Install App"** button at the top of the screen (or tap the **⋮** menu in the top-right and select **"Install app"** / **"Add to Home screen"**).
 3. Confirm by tapping **"Install"**.
 4. Android will automatically compile and install NATURA as a native **WebAPK** with its own home screen icon and splash screen. The app runs in edge-to-edge full-screen without browser bars.
 
 ### 🍎 On iPhone / iPad (Apple Safari)
-1. Open **[https://neat-chicken-77.loca.lt](https://neat-chicken-77.loca.lt)** or **[https://natura.onrender.com](https://natura.onrender.com)** in **Safari**.
+1. Open **[https://neat-chicken-77.loca.lt](https://neat-chicken-77.loca.lt)** or **[https://natura-hgb4.onrender.com/](https://natura-hgb4.onrender.com/)** in **Safari**.
 2. Tap the **Share** button (the square icon with an upward arrow 📤 / ⎋) at the bottom toolbar.
 3. Scroll down and tap **"Add to Home Screen"** (➕).
 4. Tap **"Add"** in the top right.
@@ -37,7 +36,7 @@ NATURA is fully optimized as an installable **Progressive Web App (PWA / WebAPK)
 ### 📦 Converting to a Standalone Android APK File (.apk)
 If you require an installable `.apk` file:
 1. Visit **[PWABuilder.com](https://www.pwabuilder.com)** (Microsoft's open-source PWA packaging tool).
-2. Enter the live application URL: `https://natura.onrender.com` or `https://neat-chicken-77.loca.lt`.
+2. Enter the live application URL: `https://natura-hgb4.onrender.com/` or `https://neat-chicken-77.loca.lt`.
 3. Click **"Start"** and select **"Package for Android"**.
 4. Download the generated signed `app-release.apk` package to install directly on any Android smartphone or publish to app stores.
 
