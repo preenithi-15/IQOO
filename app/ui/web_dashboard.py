@@ -65,14 +65,46 @@ HTML_PAGE = r"""<!DOCTYPE html>
             --phone-h: 844px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        html, body { background: #d8d0bd; color: var(--ink); font-family: 'Inter', -apple-system, sans-serif; height: 100%; overflow: hidden; }
+        html, body {
+            background: #0d1a10;
+            color: var(--ink);
+            font-family: 'Inter', -apple-system, sans-serif;
+            height: 100%;
+            overflow: hidden;
+        }
         h1, h2, h3, .display { font-family: 'Fraunces', Georgia, serif; }
         button { font-family: inherit; }
         a { color: inherit; }
 
-        /* PHONE SHELL — fixed on wide desktop screens; full-bleed native app on mobile & PWA */
-        #phone-wrap { height: 100vh; height: 100dvh; width: 100vw; display: flex; align-items: center; justify-content: center; }
-        #app { width: var(--phone-w); height: var(--phone-h); max-height: 94vh; background: var(--bg); position: relative; display: flex; flex-direction: column; border-radius: 34px; overflow: hidden; box-shadow: 0 20px 60px rgba(30,25,10,0.35); border: 8px solid #171a12; flex-shrink: 0; }
+        /* PHONE SHELL — fixed on wide desktop screens with rich atmospheric nature backdrop */
+        #phone-wrap {
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background:
+                radial-gradient(circle at 50% 18%, rgba(56, 107, 60, 0.35) 0%, transparent 55%),
+                radial-gradient(circle at 15% 75%, rgba(212, 131, 44, 0.16) 0%, transparent 45%),
+                radial-gradient(circle at 85% 65%, rgba(33, 67, 36, 0.35) 0%, transparent 50%),
+                linear-gradient(180deg, #122116 0%, #0a140d 60%, #040805 100%);
+        }
+        #app {
+            width: var(--phone-w);
+            height: var(--phone-h);
+            max-height: 94vh;
+            background: linear-gradient(175deg, #fbf9f4 0%, #f4eee2 35%, #edf4e8 70%, #e6efe1 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 28px 80px -15px rgba(0,0,0,0.8), 0 0 75px 12px rgba(56, 107, 60, 0.32);
+            border: 9px solid #131710;
+            flex-shrink: 0;
+        }
 
         .statusbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 22px 2px; font-size: 12px; font-weight: 700; color: var(--ink); flex-shrink: 0; }
         .topbar { display: flex; align-items: center; gap: 9px; padding: 6px 18px 12px; flex-shrink: 0; }
@@ -82,12 +114,13 @@ HTML_PAGE = r"""<!DOCTYPE html>
         /* NATIVE MOBILE APP ADAPTATION (Any Phone, Tablet, Standalone PWA, or Mobile View) */
         @media (max-width: 900px), (max-device-width: 900px), (display-mode: standalone), (pointer: coarse) {
             html, body {
-                background: var(--bg) !important;
+                background: linear-gradient(175deg, #fbf9f4 0%, #f4eee2 35%, #edf4e8 70%, #e6efe1 100%) !important;
                 height: 100% !important;
                 height: 100dvh !important;
                 overflow: hidden !important;
             }
             #phone-wrap {
+                background: none !important;
                 height: 100% !important;
                 height: 100dvh !important;
                 width: 100% !important;
@@ -103,6 +136,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
                 border-radius: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
+                background: linear-gradient(175deg, #fbf9f4 0%, #f4eee2 35%, #edf4e8 70%, #e6efe1 100%) !important;
             }
             .statusbar {
                 display: none !important; /* Mobile devices already show native system bar */
@@ -178,7 +212,17 @@ HTML_PAGE = r"""<!DOCTYPE html>
         .section-heading .glyph svg { width: 14px; height: 14px; }
         .section-heading h2 { font-size: 15px; font-weight: 600; color: var(--ink); }
 
-        .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: 0 3px 14px rgba(60,50,20,0.05); margin-bottom: var(--gap); }
+        .card {
+            background: rgba(255, 255, 255, 0.90);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.88);
+            border-radius: var(--radius);
+            padding: 18px 16px;
+            box-shadow: 0 10px 30px -6px rgba(35, 55, 30, 0.08), 0 2px 8px rgba(0, 0, 0, 0.03);
+            margin-bottom: var(--gap);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
         .card p.desc { font-size: 12.5px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 12px; }
         .card:last-child { margin-bottom: 0; }
 
@@ -229,10 +273,12 @@ HTML_PAGE = r"""<!DOCTYPE html>
         .meter-bar { height: 7px; background: var(--bg-alt); border-radius: 4px; overflow: hidden; }
         .meter-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--moss), var(--sand)); }
 
-        .toggle-row { display: flex; gap: 7px; margin-bottom: 12px; }
-        .toggle-btn { flex: 1; text-align: center; padding: 8px 4px; border-radius: 10px; font-size: 11px; font-weight: 700; background: var(--bg-alt); color: var(--ink-soft); cursor: pointer; border: 1px solid var(--line); }
-        .toggle-btn.active { background: var(--moss); color: #fff; border-color: var(--moss); }
-        .mode-explain { font-size: 11.5px; color: var(--ink-soft); background: var(--bg-alt); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; line-height: 1.5; }
+        .toggle-row { display: flex; gap: 8px; margin-bottom: 12px; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 14px; }
+        .toggle-btn { flex: 1; text-align: center; padding: 9px 4px; border-radius: 10px; font-size: 11px; font-weight: 700; background: transparent; color: var(--ink-soft); cursor: pointer; border: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .toggle-btn.active { background: var(--moss); color: #fff; box-shadow: 0 3px 10px rgba(42, 74, 44, 0.28); }
+        .toggle-btn[data-mode="enhanced"].active { background: linear-gradient(135deg, #1b6330, #2f8e4c); box-shadow: 0 4px 14px rgba(30, 110, 50, 0.35); }
+        .toggle-btn[data-mode="sonified"].active { background: linear-gradient(135deg, #6c3fb8, #b86b24); box-shadow: 0 4px 14px rgba(108, 63, 184, 0.35); }
+        .mode-explain { font-size: 11.5px; color: var(--ink-soft); background: rgba(0,0,0,0.04); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; line-height: 1.5; border: 1px solid rgba(0,0,0,0.04); }
         .mode-explain b { color: var(--moss-deep); }
 
         .layer-box { background: var(--bg-alt); border-left: 3px solid var(--moss); padding: 11px 14px; border-radius: 0 12px 12px 0; margin-bottom: 9px; font-size: 12.5px; color: var(--ink); line-height: 1.5; }
@@ -259,14 +305,14 @@ HTML_PAGE = r"""<!DOCTYPE html>
         .field-card .del-btn { position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; background:rgba(20,20,10,0.55); color:#fff; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
         .field-card .del-btn svg { width:11px; height:11px; }
 
-        .timeline { position: relative; display: flex; gap: 4px; align-items: flex-end; height: 64px; padding: 8px 6px 6px; background: var(--bg-alt); border-radius: 12px; margin-bottom: 6px; user-select: none; }
-        .timeline .tick { flex: 1; min-width: 8px; border-radius: 4px 4px 0 0; background: #cbb992; cursor: pointer; transition: transform 0.15s, background-color 0.15s; opacity: 0.75; position: relative; }
-        .timeline .tick:hover { transform: scaleY(1.15); opacity: 1; background: var(--moss); }
-        .timeline .tick.hot { background: var(--amber); opacity: 1; box-shadow: 0 0 6px rgba(201,138,63,0.45); }
-        .timeline .tick.active-tick { background: var(--moss-deep) !important; opacity: 1; transform: scaleY(1.18); outline: 2px solid var(--moss); box-shadow: 0 0 10px rgba(42,74,44,0.5); }
-        .timeline .tick.played { background: var(--moss); opacity: 0.95; }
+        .timeline { position: relative; display: flex; gap: 3.5px; align-items: flex-end; height: 72px; padding: 10px 8px 8px; background: linear-gradient(180deg, rgba(230, 242, 226, 0.75), rgba(215, 232, 210, 0.92)); border: 1px solid rgba(175, 205, 170, 0.6); border-radius: 14px; margin-bottom: 6px; user-select: none; box-shadow: inset 0 2px 6px rgba(40, 70, 40, 0.06); }
+        .timeline .tick { flex: 1; min-width: 5px; border-radius: 4px 4px 0 0; background: #c5b89a; cursor: pointer; transition: transform 0.15s, background-color 0.15s, height 0.2s; opacity: 0.8; position: relative; }
+        .timeline .tick:hover { transform: scaleY(1.18); opacity: 1; background: var(--moss); }
+        .timeline .tick.hot { background: linear-gradient(to top, #d9822b, #f3b14d); opacity: 1; box-shadow: 0 0 8px rgba(217, 130, 43, 0.55); }
+        .timeline .tick.active-tick { background: linear-gradient(to top, var(--moss-deep), #3a7540) !important; opacity: 1; transform: scaleY(1.22); outline: 2px solid #5cb85c; box-shadow: 0 0 12px rgba(42, 74, 44, 0.6); }
+        .timeline .tick.played { background: linear-gradient(to top, var(--moss), #6ba86f); opacity: 0.95; }
         .timeline-labels { display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; color: var(--ink-soft); margin-top: 4px; }
-        .timeline-event-card { margin-top: 12px; background: var(--bg-alt); border-left: 3px solid var(--moss); border-radius: 0 12px 12px 0; padding: 12px 14px; animation: fadeIn 0.2s ease; }
+        .timeline-event-card { margin-top: 14px; background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(244,249,240,0.92)); border-left: 4px solid var(--moss); border-radius: 0 14px 14px 0; padding: 14px 16px; box-shadow: 0 6px 20px -4px rgba(42, 74, 44, 0.1); animation: fadeIn 0.2s ease; border-top: 1px solid rgba(255,255,255,0.9); border-right: 1px solid rgba(220,235,215,0.8); border-bottom: 1px solid rgba(220,235,215,0.8); }
 
         .quest-card { padding: 14px; margin-bottom: 12px; }
         .quest-card .qhead { display:flex; align-items:flex-start; gap: 10px; margin-bottom: 10px; }
@@ -518,7 +564,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
                     <div class="toggle-btn" data-mode="enhanced" onclick="selectListenMode(this)">Enhanced</div>
                     <div class="toggle-btn" data-mode="sonified" onclick="selectListenMode(this)">Sonified</div>
                 </div>
-                <div class="mode-explain" id="listenModeExplain"><b>Original —</b> the raw recording, unprocessed.</div>
+                <div class="mode-explain" id="listenModeExplain"><b>Original (10s) —</b> Natural authentic field recording with ambient environmental background acoustics.</div>
                 <select id="listenClipPicker" class="comp-name-input" onchange="onListenClipChange(this.value)">
                     <option value="bee">Honeybee on hibiscus</option>
                     <option value="cricket">Night field cricket</option>
@@ -534,9 +580,9 @@ HTML_PAGE = r"""<!DOCTYPE html>
                 <h2>Acoustic timeline</h2>
             </div>
             <div class="card">
-                <p class="desc">Every recording gets a timeline of detected events. Tap any mark to jump to that point, play the audio, and view event details.</p>
+                <p class="desc">Every recording gets a 10-second timeline of detected events. Tap any mark to jump to that point, play the audio, and view event details.</p>
                 <div class="timeline" id="timeline"></div>
-                <div class="timeline-labels" id="timelineLabels"><span>0:00</span><span>0:02</span><span>0:04</span></div>
+                <div class="timeline-labels" id="timelineLabels"><span>0:00</span><span>0:02</span><span>0:05</span><span>0:08</span><span>0:10</span></div>
 
                 <div id="timelineEventCard" class="timeline-event-card" style="display:none;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -951,9 +997,9 @@ const SCENES = {
 function sceneArt(key) { return SCENES[key] || SCENES.generic; }
 
 const MODE_EXPLAIN = {
-    original: "<b>Original —</b> the raw recording, unprocessed.",
-    enhanced: "<b>Enhanced —</b> background hiss filtered out and the signal normalized. Listen for a cleaner, less noisy version at the same pitch.",
-    sonified: "<b>Sonified —</b> faint or buried detail is boosted so quiet moments become clearly audible, without blowing out the loud parts. This reveals information, it doesn't invent it.",
+    original: "<b>Original (10s) —</b> Natural authentic field recording with ambient environmental background acoustics.",
+    enhanced: "<b>Enhanced (10s) —</b> Studio-grade bioacoustic isolation. Low rumble removed, signature frequencies & harmonic transients amplified with crisp definition.",
+    sonified: "<b>Sonified (10s) —</b> Scientific frequency translation. Shifts ultrasonic & micro-vibrational signatures into crystalline melodic chimes and resonant harmonic tones.",
 };
 
 /* =========================================================
@@ -1165,32 +1211,61 @@ async function classifyImageData(canvas) {
    ========================================================= */
 const nodeGraphs = new WeakMap();
 function applyMode(audioEl, mode) {
-    const ctx = ensureCtx();
-    let graph = nodeGraphs.get(audioEl);
-    if (!graph) {
-        const source = ctx.createMediaElementSource(audioEl);
-        const filter = ctx.createBiquadFilter();
-        const compressor = ctx.createDynamicsCompressor();
-        const gain = ctx.createGain();
-        source.connect(filter); filter.connect(compressor); compressor.connect(gain); gain.connect(ctx.destination);
-        graph = { source, filter, compressor, gain };
-        nodeGraphs.set(audioEl, graph);
-    }
-    if (ctx.state === 'suspended') ctx.resume();
-    audioEl.playbackRate = 1;
-    if (mode === 'original') {
-        graph.filter.type = 'allpass'; graph.filter.frequency.value = 20000;
-        graph.compressor.threshold.value = 0; graph.compressor.ratio.value = 1;
-        graph.gain.gain.value = 1;
-    } else if (mode === 'enhanced') {
-        graph.filter.type = 'bandpass'; graph.filter.frequency.value = 2200; graph.filter.Q.value = 0.75;
-        graph.compressor.threshold.value = 0; graph.compressor.ratio.value = 1;
-        graph.gain.gain.value = 1.7;
-    } else if (mode === 'sonified') {
-        graph.filter.type = 'allpass'; graph.filter.frequency.value = 20000;
-        graph.compressor.threshold.value = -55; graph.compressor.ratio.value = 14;
-        graph.compressor.attack.value = 0.003; graph.compressor.release.value = 0.25;
-        graph.gain.gain.value = 2.3;
+    try {
+        const ctx = ensureCtx();
+        let graph = nodeGraphs.get(audioEl);
+        if (!graph) {
+            const source = ctx.createMediaElementSource(audioEl);
+            const filter = ctx.createBiquadFilter();
+            const presence = ctx.createBiquadFilter();
+            const compressor = ctx.createDynamicsCompressor();
+            const gain = ctx.createGain();
+            source.connect(filter);
+            filter.connect(presence);
+            presence.connect(compressor);
+            compressor.connect(gain);
+            gain.connect(ctx.destination);
+            graph = { source, filter, presence, compressor, gain };
+            nodeGraphs.set(audioEl, graph);
+        }
+        if (ctx.state === 'suspended') ctx.resume();
+        audioEl.playbackRate = 1;
+        if (mode === 'original') {
+            graph.filter.type = 'allpass';
+            graph.filter.frequency.value = 20000;
+            graph.presence.type = 'allpass';
+            graph.compressor.threshold.value = 0;
+            graph.compressor.ratio.value = 1;
+            graph.gain.gain.value = 1.0;
+        } else if (mode === 'enhanced') {
+            graph.filter.type = 'highpass';
+            graph.filter.frequency.value = 180;
+            graph.presence.type = 'peaking';
+            graph.presence.frequency.value = 2800;
+            graph.presence.Q.value = 1.8;
+            graph.presence.gain.value = 6.0;
+            graph.compressor.threshold.value = -18;
+            graph.compressor.ratio.value = 3.5;
+            graph.compressor.attack.value = 0.005;
+            graph.compressor.release.value = 0.15;
+            graph.gain.gain.value = 1.35;
+        } else if (mode === 'sonified') {
+            graph.filter.type = 'peaking';
+            graph.filter.frequency.value = 880;
+            graph.filter.Q.value = 3.5;
+            graph.filter.gain.value = 7.0;
+            graph.presence.type = 'peaking';
+            graph.presence.frequency.value = 1760;
+            graph.presence.Q.value = 2.5;
+            graph.presence.gain.value = 5.0;
+            graph.compressor.threshold.value = -35;
+            graph.compressor.ratio.value = 7;
+            graph.compressor.attack.value = 0.003;
+            graph.compressor.release.value = 0.20;
+            graph.gain.gain.value = 1.40;
+        }
+    } catch (e) {
+        // Fallback for browsers with media element audio restrictions
     }
 }
 
@@ -1289,55 +1364,79 @@ function showLiveToast(msg, targetPageId) {
    ========================================================= */
 const TIMELINE_PROFILES = {
     bee: {
-        heights: [22, 35, 48, 30, 65, 42, 58, 28, 92, 75, 45, 60, 24, 48, 32],
-        hotIndex: 8,
+        heights: [24, 32, 45, 52, 40, 62, 70, 58, 48, 80, 95, 88, 72, 60, 50, 65, 42, 35, 28, 20],
+        hotIndex: 10,
         events: {
-            8: { title: "Peak Honeybee Wingbeat Harmonic", badge: "Biophony Peak", desc: "Sustained 240 Hz fundamental tone with distinct flight harmonics (480 Hz / 720 Hz). Apis cerana match: 91%." },
-            4: { title: "Approach & Floral Proximity", badge: "Flight Pattern", desc: "Wingbeat frequency rise as bee maneuvers near hibiscus blossom." },
-            11: { title: "Hovering Foraging Cadence", badge: "Biophony", desc: "Stable hovering oscillation during floral nectar collection." }
+            0: { title: "Approach Flight & Distant Flutter", badge: "Flight Pattern", desc: "Foraging worker bee approaching the floral canopy at 220 Hz fundamental frequency." },
+            3: { title: "Canopy Radar & Floral Scent Proximity", badge: "Approach", desc: "Velocity adjustments as the bee zeroes in on the hibiscus blossom." },
+            6: { title: "Hovering Stabilization & Inspection", badge: "Hover Cadence", desc: "Fundamental wingbeat locks in at 240 Hz with steady laminar airflow." },
+            10: { title: "Peak Pollen Buzz & Wingbeat Harmonics", badge: "Biophony Peak", desc: "Rapid thorax vibration bursts releasing pollen grains. Strong harmonics at 480 Hz & 720 Hz (Match: 93%)." },
+            13: { title: "Nectar Ingestion & Wing Rest", badge: "Feeding Phase", desc: "Intermittent fluttering cadence as the pollinator secures nectar." },
+            16: { title: "Pre-Departure Lift Thruster", badge: "Ascent", desc: "Sharp upward frequency sweep as bee lifts off from petals." },
+            19: { title: "Distant Departure & Canopy Fade", badge: "Fadeout", desc: "Acoustic signature disperses into general meadow ambience." }
         },
-        defaultEvent: { title: "Ambient Foliage & Distant Flutter", badge: "Background", desc: "Low-amplitude natural background acoustics surrounding the pollinator." }
+        defaultEvent: { title: "Ambient Foliage & Pollinator Flutter", badge: "Meadow Biophony", desc: "Low-amplitude natural background acoustics surrounding the pollinator." }
     },
     cricket: {
-        heights: [18, 30, 42, 68, 35, 52, 75, 40, 95, 82, 58, 32, 70, 44, 26],
-        hotIndex: 8,
+        heights: [20, 28, 42, 55, 68, 75, 82, 78, 88, 96, 90, 84, 76, 70, 62, 50, 44, 36, 28, 22],
+        hotIndex: 9,
         events: {
-            8: { title: "High-Intensity Stridulation Pulse Cluster", badge: "Peak Stridulation", desc: "Rapid wing-file friction producing sharp 4.8 kHz – 5.5 kHz pulses in rhythmic 120ms cycles. Match: 87%." },
-            3: { title: "Pre-Stridulation Wing Friction", badge: "Chirp Train", desc: "Initial warming pulse cadence before sustained territorial calling." },
-            12: { title: "Nocturnal Insect Chorus Reverberation", badge: "Nocturnal Biophony", desc: "Ambient echo decay across grass blades and nocturnal foliage." }
+            0: { title: "Twilight Meadow Quietude", badge: "Atmosphere", desc: "Grass canopy settling into darkness with faint night wind." },
+            2: { title: "Pre-Stridulation Warming Chirps", badge: "Chirp Train", desc: "Initial low-frequency rubbing of the elytral wing scraper." },
+            5: { title: "Rhythmic Calling Cadence Engaged", badge: "Calling Song", desc: "Steady pulse train established at 14 stridulations per second." },
+            9: { title: "High-Intensity Stridulation Pulse Cluster", badge: "Peak Stridulation", desc: "Maximum territorial acoustic resonance at 5.15 kHz. Match: 91%." },
+            13: { title: "Nocturnal Insect Chorus Inflow", badge: "Nocturnal Biophony", desc: "Sympathetic resonance with neighboring field crickets." },
+            16: { title: "Acoustic Reflection on Dewy Blades", badge: "Geophony Echo", desc: "High-frequency reverberation across moisture-laden grass." },
+            19: { title: "Nocturnal Ambience Reverberation", badge: "Decay", desc: "Sustained twilight hum across the soil stratum." }
         },
-        defaultEvent: { title: "Nocturnal Field Ambience", badge: "Atmosphere", desc: "Steady background nocturnal insect hum in grass habitat." }
+        defaultEvent: { title: "Continuous Stridulation Hum", badge: "Grassland Biophony", desc: "Regular 5.2 kHz male calling pulses across the ground stratum." }
     },
     rain: {
-        heights: [35, 45, 62, 50, 78, 85, 60, 48, 92, 68, 55, 72, 40, 52, 38],
+        heights: [35, 42, 50, 60, 68, 76, 85, 92, 98, 94, 88, 80, 72, 65, 58, 52, 45, 38, 32, 26],
         hotIndex: 8,
         events: {
-            8: { title: "Teak Canopy Droplet Impact Transient", badge: "Impact Transient", desc: "Sharp broad-spectrum impulse (1.2 kHz – 3.4 kHz) followed by leaf vibration dampening. Match: 95%." },
-            5: { title: "Heavy Droplet Surge", badge: "Rain Shower", desc: "Dense cascade of water impacts across teak foliage." },
-            11: { title: "Monsoon Wind & Foliage Friction", badge: "Geophony", desc: "Wind turbulence rustling wet forest canopy." }
+            0: { title: "Early Drizzle & Canopy Dampening", badge: "Onset", desc: "Scattered high-elevation droplets reaching upper forest foliage." },
+            3: { title: "Canopy Droplet Accumulation", badge: "Geophony", desc: "Droplets pooling on broad teak leaves before secondary impact." },
+            6: { title: "Heavy Monsoon Inflow Surge", badge: "Storm Wave", desc: "Sudden acceleration in precipitation volume across the grove." },
+            8: { title: "Teak Canopy Droplet Impact Transient", badge: "Impact Peak", desc: "Heavy water mass striking broad leaf surface with 1.8 kHz resonance. Match: 95%." },
+            12: { title: "Stem Flow & Trunk Hydrology", badge: "Hydrology", desc: "Cascading runoff creating low percussive splashing below." },
+            15: { title: "Canopy Absorption & Wind Friction", badge: "Wind & Water", desc: "Damp leaf friction absorbing acoustic energy into a warm wash." },
+            19: { title: "Gentle Forest Floor Runoff", badge: "Post-Rain", desc: "Soft ambient trickling through forest soil." }
         },
-        defaultEvent: { title: "Continuous Rainfall Ambience", badge: "Broadband", desc: "Steady rhythmic raindrops washing over broad tropical leaves." }
+        defaultEvent: { title: "Monsoon Percussion & Canopy Rustle", badge: "Hydrometeorology", desc: "Broadband water droplet impacts on tropical broadleaf canopy." }
     },
     bat: {
-        heights: [15, 22, 35, 28, 45, 38, 55, 42, 96, 84, 60, 30, 50, 25, 18],
-        hotIndex: 8,
+        heights: [18, 25, 35, 30, 48, 55, 65, 72, 85, 98, 92, 78, 62, 50, 40, 32, 28, 24, 20, 16],
+        hotIndex: 9,
         events: {
-            8: { title: "Ultrasonic Terminal Feeding Buzz", badge: "Feeding Buzz", desc: "High-rate echolocation clicks shifted via heterodyne DSP from 38 kHz down into the audible 2.8 kHz band. Match: 78%." },
-            6: { title: "Approach Phase Echolocation Sweep", badge: "Ultrasound Sweep", desc: "Click rate increases from 10 Hz to 80 Hz as bat zeros in on airborne prey." },
-            2: { title: "Cruising Search Phase Pulse", badge: "Search Pulse", desc: "Low repetition ultrasonic pulses emitted during open-air patrol flight." }
+            0: { title: "Open-Air Search Flight", badge: "Search Pulse", desc: "Low-frequency patrol pulses emitted at 3 Hz to navigate tree lines." },
+            3: { title: "Echo Return & Obstacle Boundary", badge: "Echo Location", desc: "Target reflection detected from airborne insect 12 meters ahead." },
+            6: { title: "Approach Phase Chirp Acceleration", badge: "Target Tracking", desc: "Pulse rate increases to 25 Hz; frequency sweeps downward from 22 kHz." },
+            9: { title: "Ultrasonic Terminal Feeding Buzz", badge: "Feeding Buzz", desc: "Ultra-fast burst of 150 clicks/sec locking onto prey coordinates. Match: 89%." },
+            12: { title: "Prey Capture & Wing Netting", badge: "Capture", desc: "Brief silent pause following prey interception." },
+            15: { title: "Orientation Sweep & Flight Recovery", badge: "Recovery", desc: "Wide-beam pulse reassessing forest canopy clearance." },
+            19: { title: "High-Altitude Patrol Cruise", badge: "Patrol Glide", desc: "Smooth gliding return to standard foraging circuit." }
         },
-        defaultEvent: { title: "Ultrasonic Background & Echoes", badge: "Ultrasound Band", desc: "Distant sonified reflections above human hearing range." }
+        defaultEvent: { title: "Ultrasonic Echolocation Stream", badge: "Bat Ultrasound", desc: "Down-converted ultrasonic pulses revealing twilight flight paths." }
     }
 };
 
 let currentTimelineClip = 'bee';
 let selectedTimelineTime = 0;
 
+function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    const ms = Math.floor((sec % 1) * 10);
+    return m + ':' + (s < 10 ? '0' : '') + s + '.' + ms;
+}
+
 function seekAndPlay(player, targetTime) {
     const doSeek = () => {
-        const dur = (player.duration && isFinite(player.duration) && player.duration > 0) ? player.duration : 4.0;
+        const dur = (player.duration && isFinite(player.duration) && player.duration > 0) ? player.duration : 10.0;
         const maxSeek = Math.max(0, dur - 0.05);
         player.currentTime = Math.min(targetTime, maxSeek);
+        applyMode(player, listenMode);
         player.play().catch(e => console.log('Player play error:', e));
     };
     if (player.readyState >= 1) {
@@ -1359,18 +1458,18 @@ function buildTimeline(clipKey) {
     const hotIndex = profile.hotIndex;
 
     const player = document.getElementById('reprPlayer');
-    if (player && (!player.src || player.dataset.clip !== currentTimelineClip)) {
-        player.src = CLIPS[currentTimelineClip].url;
+    const targetUrl = '/audio/' + currentTimelineClip + '?mode=' + listenMode;
+    if (player && (!player.src || player.dataset.clip !== currentTimelineClip || player.dataset.mode !== listenMode)) {
+        player.src = targetUrl;
         player.dataset.clip = currentTimelineClip;
+        player.dataset.mode = listenMode;
         applyMode(player, listenMode);
     }
-    const totalDuration = (player && player.duration && isFinite(player.duration) && player.duration > 0) ? player.duration : 4.0;
+    const totalDuration = (player && player.duration && isFinite(player.duration) && player.duration > 0) ? player.duration : 10.0;
 
     const labelsEl = document.getElementById('timelineLabels');
     if (labelsEl) {
-        const half = (totalDuration / 2).toFixed(1);
-        const full = totalDuration.toFixed(1);
-        labelsEl.innerHTML = '<span>0:00</span><span>0:' + (half < 10 ? '0' : '') + half.replace('.', ':') + '</span><span>0:' + (full < 10 ? '0' : '') + full.replace('.', ':') + '</span>';
+        labelsEl.innerHTML = '<span>0:00</span><span>0:02</span><span>0:05</span><span>0:08</span><span>0:10</span>';
     }
 
     heights.forEach((h, i) => {
@@ -1378,7 +1477,7 @@ function buildTimeline(clipKey) {
         tick.className = 'tick' + (i === hotIndex ? ' hot' : '');
         tick.style.height = h + '%';
         const tickTime = (i / (heights.length - 1)) * totalDuration;
-        tick.title = 'Event at ' + tickTime.toFixed(1) + 's (Tap to jump and listen)';
+        tick.title = 'Event at ' + formatTime(tickTime) + ' (Tap to jump and listen)';
         tick.dataset.index = i;
         tick.dataset.time = tickTime;
 
@@ -1400,10 +1499,13 @@ function selectTimelineTick(index, tickTime, profile) {
 
     const player = document.getElementById('reprPlayer');
     const clipKey = currentTimelineClip;
-    if (player.dataset.clip !== clipKey || !player.src) {
-        player.src = CLIPS[clipKey].url;
+    const targetUrl = '/audio/' + clipKey + '?mode=' + listenMode;
+    const fullTargetUrl = new URL(targetUrl, window.location.href).href;
+    
+    if (player.src !== fullTargetUrl) {
+        player.src = targetUrl;
         player.dataset.clip = clipKey;
-        applyMode(player, listenMode);
+        player.dataset.mode = listenMode;
     }
     seekAndPlay(player, tickTime);
 
@@ -1417,7 +1519,7 @@ function selectTimelineTick(index, tickTime, profile) {
 
     if (card) {
         card.style.display = 'block';
-        timeEl.textContent = '⏱️ Jumped to 0:0' + tickTime.toFixed(1).replace('.', ':') + ' (' + (CLIPS[clipKey] ? CLIPS[clipKey].label : '') + ')';
+        timeEl.textContent = '⏱️ Jumped to ' + formatTime(tickTime) + ' (' + (CLIPS[clipKey] ? CLIPS[clipKey].label : '') + ')';
         badgeEl.textContent = ev.badge;
         titleEl.textContent = ev.title;
         descEl.textContent = ev.desc;
@@ -1427,10 +1529,11 @@ function selectTimelineTick(index, tickTime, profile) {
 
 function playTimelineSelectedPoint() {
     const player = document.getElementById('reprPlayer');
+    const targetUrl = '/audio/' + currentTimelineClip + '?mode=' + listenMode;
     if (!player.src) {
-        player.src = CLIPS[currentTimelineClip].url;
+        player.src = targetUrl;
         player.dataset.clip = currentTimelineClip;
-        applyMode(player, listenMode);
+        player.dataset.mode = listenMode;
     }
     seekAndPlay(player, selectedTimelineTime);
 }
@@ -1446,15 +1549,25 @@ function redirectTimelineToCompose() {
 
 function onListenClipChange(clipKey) {
     currentTimelineClip = clipKey;
+    const player = document.getElementById('reprPlayer');
+    if (player) {
+        player.src = '/audio/' + clipKey + '?mode=' + listenMode;
+        player.dataset.clip = clipKey;
+        player.dataset.mode = listenMode;
+        player.currentTime = 0;
+        applyMode(player, listenMode);
+    }
     buildTimeline(clipKey);
     playRepresentation();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+let timelineListenersAttached = false;
+function attachTimelineListeners() {
+    if (timelineListenersAttached) return;
     const reprPlayerEl = document.getElementById('reprPlayer');
     if (reprPlayerEl) {
         reprPlayerEl.addEventListener('timeupdate', () => {
-            const dur = reprPlayerEl.duration || 4.0;
+            const dur = (reprPlayerEl.duration && isFinite(reprPlayerEl.duration) && reprPlayerEl.duration > 0) ? reprPlayerEl.duration : 10.0;
             const progress = reprPlayerEl.currentTime / dur;
             const ticks = document.querySelectorAll('#timeline .tick');
             const numTicks = ticks.length;
@@ -1470,32 +1583,18 @@ window.addEventListener('DOMContentLoaded', () => {
         reprPlayerEl.addEventListener('loadedmetadata', () => {
             buildTimeline(currentTimelineClip);
         });
+        timelineListenersAttached = true;
     }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    attachTimelineListeners();
     buildTimeline('bee');
 });
 
 setTimeout(() => {
+    attachTimelineListeners();
     buildTimeline('bee');
-    const reprPlayerEl = document.getElementById('reprPlayer');
-    if (reprPlayerEl) {
-        reprPlayerEl.addEventListener('timeupdate', () => {
-            const dur = reprPlayerEl.duration || 4.0;
-            const progress = reprPlayerEl.currentTime / dur;
-            const ticks = document.querySelectorAll('#timeline .tick');
-            const numTicks = ticks.length;
-            if (!numTicks) return;
-            const currentIdx = Math.floor(progress * numTicks);
-            ticks.forEach((t, i) => {
-                t.classList.toggle('played', i <= currentIdx);
-            });
-        });
-        reprPlayerEl.addEventListener('ended', () => {
-            document.querySelectorAll('#timeline .tick').forEach(t => t.classList.remove('played'));
-        });
-        reprPlayerEl.addEventListener('loadedmetadata', () => {
-            buildTimeline(currentTimelineClip);
-        });
-    }
 }, 100);
 
 /* ---- Listen page representation player ---- */
@@ -1507,12 +1606,23 @@ function selectListenMode(el) {
     document.getElementById('listenModeExplain').innerHTML = MODE_EXPLAIN[listenMode];
     playRepresentation();
 }
+
 function playRepresentation() {
-    const clipKey = document.getElementById('listenClipPicker').value;
+    const clipKey = document.getElementById('listenClipPicker') ? document.getElementById('listenClipPicker').value : 'bee';
     const player = document.getElementById('reprPlayer');
-    if (player.dataset.clip !== clipKey) { player.src = CLIPS[clipKey].url; player.dataset.clip = clipKey; }
-    applyMode(player, listenMode);
-    player.play().catch(()=>{});
+    const targetUrl = '/audio/' + clipKey + '?mode=' + listenMode;
+    const prevTime = (player.currentTime && isFinite(player.currentTime)) ? player.currentTime : 0;
+    const fullTargetUrl = new URL(targetUrl, window.location.href).href;
+    
+    if (player.src !== fullTargetUrl) {
+        player.src = targetUrl;
+        player.dataset.clip = clipKey;
+        player.dataset.mode = listenMode;
+        seekAndPlay(player, prevTime);
+    } else {
+        applyMode(player, listenMode);
+        player.play().catch(()=>{});
+    }
 }
 
 /* ---- Album detail player ---- */
@@ -1568,6 +1678,19 @@ function selectDetailMode(el) {
     detailMode = el.dataset.mode;
     document.getElementById('detailModeExplain').innerHTML = MODE_EXPLAIN[detailMode];
     const player = document.getElementById('detailPlayer');
+    if (player && player.src) {
+        try {
+            const url = new URL(player.src, window.location.href);
+            if (url.pathname.startsWith('/audio/')) {
+                const baseKey = url.pathname.replace('/audio/', '').split('?')[0].split('_')[0];
+                const newUrl = '/audio/' + baseKey + '?mode=' + detailMode;
+                const curTime = (player.currentTime && isFinite(player.currentTime)) ? player.currentTime : 0;
+                player.src = newUrl;
+                seekAndPlay(player, curTime);
+                return;
+            }
+        } catch(e) {}
+    }
     applyMode(player, detailMode);
     player.play().catch(()=>{});
 }
@@ -2636,15 +2759,34 @@ class NaturaDashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(HTML_PAGE.encode("utf-8"))
         elif parsed.path.startswith("/audio/"):
-            key = parsed.path.split("/audio/", 1)[1]
-            filename = SAMPLE_FILES.get(key)
-            if not filename:
+            raw_key = parsed.path.split("/audio/", 1)[1].split("?")[0].rstrip("/")
+            query_params = urllib.parse.parse_qs(parsed.query)
+            mode = query_params.get("mode", ["original"])[0].lower()
+            
+            # Support direct keys like 'bee_sonified' or query params ?mode=sonified
+            if "_" in raw_key and any(m in raw_key for m in ("enhanced", "sonified", "original")):
+                parts = raw_key.rsplit("_", 1)
+                base_key = parts[0]
+                mode = parts[1]
+            else:
+                base_key = raw_key
+                
+            base_file = SAMPLE_FILES.get(base_key)
+            if not base_file:
                 self.send_error(404, "Unknown clip")
                 return
+                
+            stem = base_file.replace(".wav", "")
+            if mode == "enhanced":
+                filename = f"{stem}_enhanced.wav"
+            elif mode == "sonified":
+                filename = f"{stem}_sonified.wav"
+            else:
+                filename = base_file
+                
             file_path = SAMPLES_DIR / filename
             if not file_path.exists():
-                self.send_error(404, "Sample file missing")
-                return
+                file_path = SAMPLES_DIR / base_file
             data = file_path.read_bytes()
             total_len = len(data)
             range_header = self.headers.get("Range")
