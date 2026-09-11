@@ -259,10 +259,14 @@ HTML_PAGE = r"""<!DOCTYPE html>
         .field-card .del-btn { position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; background:rgba(20,20,10,0.55); color:#fff; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
         .field-card .del-btn svg { width:11px; height:11px; }
 
-        .timeline { display: flex; gap: 3px; align-items: flex-end; height: 56px; padding: 8px 0; overflow-x: auto; }
-        .timeline .tick { min-width: 10px; border-radius: 3px 3px 0 0; background: var(--sand); cursor: pointer; opacity: 0.75; }
-        .timeline .tick:hover, .timeline .tick.hot { opacity: 1; background: var(--moss); }
-        .timeline-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--ink-soft); margin-top: 4px; }
+        .timeline { position: relative; display: flex; gap: 4px; align-items: flex-end; height: 64px; padding: 8px 6px 6px; background: var(--bg-alt); border-radius: 12px; margin-bottom: 6px; user-select: none; }
+        .timeline .tick { flex: 1; min-width: 8px; border-radius: 4px 4px 0 0; background: #cbb992; cursor: pointer; transition: transform 0.15s, background-color 0.15s; opacity: 0.75; position: relative; }
+        .timeline .tick:hover { transform: scaleY(1.15); opacity: 1; background: var(--moss); }
+        .timeline .tick.hot { background: var(--amber); opacity: 1; box-shadow: 0 0 6px rgba(201,138,63,0.45); }
+        .timeline .tick.active-tick { background: var(--moss-deep) !important; opacity: 1; transform: scaleY(1.18); outline: 2px solid var(--moss); box-shadow: 0 0 10px rgba(42,74,44,0.5); }
+        .timeline .tick.played { background: var(--moss); opacity: 0.95; }
+        .timeline-labels { display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; color: var(--ink-soft); margin-top: 4px; }
+        .timeline-event-card { margin-top: 12px; background: var(--bg-alt); border-left: 3px solid var(--moss); border-radius: 0 12px 12px 0; padding: 12px 14px; animation: fadeIn 0.2s ease; }
 
         .quest-card { padding: 14px; margin-bottom: 12px; }
         .quest-card .qhead { display:flex; align-items:flex-start; gap: 10px; margin-bottom: 10px; }
@@ -515,7 +519,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
                     <div class="toggle-btn" data-mode="sonified" onclick="selectListenMode(this)">Sonified</div>
                 </div>
                 <div class="mode-explain" id="listenModeExplain"><b>Original —</b> the raw recording, unprocessed.</div>
-                <select id="listenClipPicker" class="comp-name-input" onchange="playRepresentation()">
+                <select id="listenClipPicker" class="comp-name-input" onchange="onListenClipChange(this.value)">
                     <option value="bee">Honeybee on hibiscus</option>
                     <option value="cricket">Night field cricket</option>
                     <option value="rain">Monsoon on teak leaves</option>
@@ -530,9 +534,29 @@ HTML_PAGE = r"""<!DOCTYPE html>
                 <h2>Acoustic timeline</h2>
             </div>
             <div class="card">
-                <p class="desc">Every recording gets a timeline of detected events. Tap any mark to jump there.</p>
+                <p class="desc">Every recording gets a timeline of detected events. Tap any mark to jump to that point, play the audio, and view event details.</p>
                 <div class="timeline" id="timeline"></div>
-                <div class="timeline-labels"><span>0:00</span><span>0:15</span><span>0:30</span></div>
+                <div class="timeline-labels" id="timelineLabels"><span>0:00</span><span>0:02</span><span>0:04</span></div>
+
+                <div id="timelineEventCard" class="timeline-event-card" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span id="timelineEventTime" style="font-weight:700; font-size:12px; color:var(--moss-deep);">⏱️ Jumped to 0:02.1</span>
+                        <span id="timelineEventBadge" class="stem-tag" style="margin:0; font-size:10px; padding:2px 8px;">Peak Event</span>
+                    </div>
+                    <div id="timelineEventTitle" style="font-size:13px; font-weight:700; color:var(--ink); margin-bottom:4px;">Honeybee Wingbeat Harmonic Detected</div>
+                    <div id="timelineEventDesc" style="font-size:11.5px; color:var(--ink-soft); line-height:1.45; margin-bottom:10px;">Apis cerana flight harmonic peaked at 240 Hz with sustained wingbeat velocity.</div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn xs" onclick="playTimelineSelectedPoint()">
+                            <span>▶</span> Play from here
+                        </button>
+                        <button class="btn xs outline" id="timelineRedirectDetailBtn" onclick="redirectTimelineToDetail()">
+                            <span>🔍</span> View Moment Details →
+                        </button>
+                        <button class="btn xs ghost" onclick="redirectTimelineToCompose()">
+                            <span>🎵</span> Compose with this sound →
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1260,19 +1284,219 @@ function showLiveToast(msg, targetPageId) {
     setTimeout(() => { if (toast) toast.style.display = 'none'; }, 7000);
 }
 
-(function buildTimeline() {
+/* =========================================================
+   Acoustic Timeline with Live Seeking, Tracking & Redirection
+   ========================================================= */
+const TIMELINE_PROFILES = {
+    bee: {
+        heights: [22, 35, 48, 30, 65, 42, 58, 28, 92, 75, 45, 60, 24, 48, 32],
+        hotIndex: 8,
+        events: {
+            8: { title: "Peak Honeybee Wingbeat Harmonic", badge: "Biophony Peak", desc: "Sustained 240 Hz fundamental tone with distinct flight harmonics (480 Hz / 720 Hz). Apis cerana match: 91%." },
+            4: { title: "Approach & Floral Proximity", badge: "Flight Pattern", desc: "Wingbeat frequency rise as bee maneuvers near hibiscus blossom." },
+            11: { title: "Hovering Foraging Cadence", badge: "Biophony", desc: "Stable hovering oscillation during floral nectar collection." }
+        },
+        defaultEvent: { title: "Ambient Foliage & Distant Flutter", badge: "Background", desc: "Low-amplitude natural background acoustics surrounding the pollinator." }
+    },
+    cricket: {
+        heights: [18, 30, 42, 68, 35, 52, 75, 40, 95, 82, 58, 32, 70, 44, 26],
+        hotIndex: 8,
+        events: {
+            8: { title: "High-Intensity Stridulation Pulse Cluster", badge: "Peak Stridulation", desc: "Rapid wing-file friction producing sharp 4.8 kHz – 5.5 kHz pulses in rhythmic 120ms cycles. Match: 87%." },
+            3: { title: "Pre-Stridulation Wing Friction", badge: "Chirp Train", desc: "Initial warming pulse cadence before sustained territorial calling." },
+            12: { title: "Nocturnal Insect Chorus Reverberation", badge: "Nocturnal Biophony", desc: "Ambient echo decay across grass blades and nocturnal foliage." }
+        },
+        defaultEvent: { title: "Nocturnal Field Ambience", badge: "Atmosphere", desc: "Steady background nocturnal insect hum in grass habitat." }
+    },
+    rain: {
+        heights: [35, 45, 62, 50, 78, 85, 60, 48, 92, 68, 55, 72, 40, 52, 38],
+        hotIndex: 8,
+        events: {
+            8: { title: "Teak Canopy Droplet Impact Transient", badge: "Impact Transient", desc: "Sharp broad-spectrum impulse (1.2 kHz – 3.4 kHz) followed by leaf vibration dampening. Match: 95%." },
+            5: { title: "Heavy Droplet Surge", badge: "Rain Shower", desc: "Dense cascade of water impacts across teak foliage." },
+            11: { title: "Monsoon Wind & Foliage Friction", badge: "Geophony", desc: "Wind turbulence rustling wet forest canopy." }
+        },
+        defaultEvent: { title: "Continuous Rainfall Ambience", badge: "Broadband", desc: "Steady rhythmic raindrops washing over broad tropical leaves." }
+    },
+    bat: {
+        heights: [15, 22, 35, 28, 45, 38, 55, 42, 96, 84, 60, 30, 50, 25, 18],
+        hotIndex: 8,
+        events: {
+            8: { title: "Ultrasonic Terminal Feeding Buzz", badge: "Feeding Buzz", desc: "High-rate echolocation clicks shifted via heterodyne DSP from 38 kHz down into the audible 2.8 kHz band. Match: 78%." },
+            6: { title: "Approach Phase Echolocation Sweep", badge: "Ultrasound Sweep", desc: "Click rate increases from 10 Hz to 80 Hz as bat zeros in on airborne prey." },
+            2: { title: "Cruising Search Phase Pulse", badge: "Search Pulse", desc: "Low repetition ultrasonic pulses emitted during open-air patrol flight." }
+        },
+        defaultEvent: { title: "Ultrasonic Background & Echoes", badge: "Ultrasound Band", desc: "Distant sonified reflections above human hearing range." }
+    }
+};
+
+let currentTimelineClip = 'bee';
+let selectedTimelineTime = 0;
+
+function seekAndPlay(player, targetTime) {
+    const doSeek = () => {
+        const dur = (player.duration && isFinite(player.duration) && player.duration > 0) ? player.duration : 4.0;
+        const maxSeek = Math.max(0, dur - 0.05);
+        player.currentTime = Math.min(targetTime, maxSeek);
+        player.play().catch(e => console.log('Player play error:', e));
+    };
+    if (player.readyState >= 1) {
+        doSeek();
+    } else {
+        player.addEventListener('loadedmetadata', doSeek, { once: true });
+        player.load();
+    }
+}
+
+function buildTimeline(clipKey) {
+    currentTimelineClip = clipKey || (document.getElementById('listenClipPicker') ? document.getElementById('listenClipPicker').value : 'bee');
     const el = document.getElementById('timeline');
-    const heights = [20, 35, 55, 30, 70, 45, 60, 25, 80, 40, 30, 65, 20, 50, 35];
-    const hotIndex = 8;
+    if (!el) return;
+    el.innerHTML = '';
+
+    const profile = TIMELINE_PROFILES[currentTimelineClip] || TIMELINE_PROFILES.bee;
+    const heights = profile.heights;
+    const hotIndex = profile.hotIndex;
+
+    const player = document.getElementById('reprPlayer');
+    if (player && (!player.src || player.dataset.clip !== currentTimelineClip)) {
+        player.src = CLIPS[currentTimelineClip].url;
+        player.dataset.clip = currentTimelineClip;
+        applyMode(player, listenMode);
+    }
+    const totalDuration = (player && player.duration && isFinite(player.duration) && player.duration > 0) ? player.duration : 4.0;
+
+    const labelsEl = document.getElementById('timelineLabels');
+    if (labelsEl) {
+        const half = (totalDuration / 2).toFixed(1);
+        const full = totalDuration.toFixed(1);
+        labelsEl.innerHTML = '<span>0:00</span><span>0:' + (half < 10 ? '0' : '') + half.replace('.', ':') + '</span><span>0:' + (full < 10 ? '0' : '') + full.replace('.', ':') + '</span>';
+    }
+
     heights.forEach((h, i) => {
         const tick = document.createElement('div');
         tick.className = 'tick' + (i === hotIndex ? ' hot' : '');
         tick.style.height = h + '%';
-        tick.title = 'Event at ' + (i * 2) + 's';
-        tick.onclick = () => { const p = document.getElementById('reprPlayer'); p.currentTime = 0; p.play().catch(()=>{}); };
+        const tickTime = (i / (heights.length - 1)) * totalDuration;
+        tick.title = 'Event at ' + tickTime.toFixed(1) + 's (Tap to jump and listen)';
+        tick.dataset.index = i;
+        tick.dataset.time = tickTime;
+
+        tick.onclick = () => {
+            selectTimelineTick(i, tickTime, profile);
+        };
         el.appendChild(tick);
     });
-})();
+}
+
+function selectTimelineTick(index, tickTime, profile) {
+    profile = profile || TIMELINE_PROFILES[currentTimelineClip] || TIMELINE_PROFILES.bee;
+    selectedTimelineTime = tickTime;
+
+    const ticks = document.querySelectorAll('#timeline .tick');
+    ticks.forEach((t, idx) => {
+        t.classList.toggle('active-tick', idx === index);
+    });
+
+    const player = document.getElementById('reprPlayer');
+    const clipKey = currentTimelineClip;
+    if (player.dataset.clip !== clipKey || !player.src) {
+        player.src = CLIPS[clipKey].url;
+        player.dataset.clip = clipKey;
+        applyMode(player, listenMode);
+    }
+    seekAndPlay(player, tickTime);
+
+    const card = document.getElementById('timelineEventCard');
+    const timeEl = document.getElementById('timelineEventTime');
+    const badgeEl = document.getElementById('timelineEventBadge');
+    const titleEl = document.getElementById('timelineEventTitle');
+    const descEl = document.getElementById('timelineEventDesc');
+
+    const ev = profile.events[index] || profile.defaultEvent;
+
+    if (card) {
+        card.style.display = 'block';
+        timeEl.textContent = '⏱️ Jumped to 0:0' + tickTime.toFixed(1).replace('.', ':') + ' (' + (CLIPS[clipKey] ? CLIPS[clipKey].label : '') + ')';
+        badgeEl.textContent = ev.badge;
+        titleEl.textContent = ev.title;
+        descEl.textContent = ev.desc;
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function playTimelineSelectedPoint() {
+    const player = document.getElementById('reprPlayer');
+    if (!player.src) {
+        player.src = CLIPS[currentTimelineClip].url;
+        player.dataset.clip = currentTimelineClip;
+        applyMode(player, listenMode);
+    }
+    seekAndPlay(player, selectedTimelineTime);
+}
+
+function redirectTimelineToDetail() {
+    const groupId = 'g-' + currentTimelineClip;
+    openDetail(groupId);
+}
+
+function redirectTimelineToCompose() {
+    goToPage('page-compose');
+}
+
+function onListenClipChange(clipKey) {
+    currentTimelineClip = clipKey;
+    buildTimeline(clipKey);
+    playRepresentation();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const reprPlayerEl = document.getElementById('reprPlayer');
+    if (reprPlayerEl) {
+        reprPlayerEl.addEventListener('timeupdate', () => {
+            const dur = reprPlayerEl.duration || 4.0;
+            const progress = reprPlayerEl.currentTime / dur;
+            const ticks = document.querySelectorAll('#timeline .tick');
+            const numTicks = ticks.length;
+            if (!numTicks) return;
+            const currentIdx = Math.floor(progress * numTicks);
+            ticks.forEach((t, i) => {
+                t.classList.toggle('played', i <= currentIdx);
+            });
+        });
+        reprPlayerEl.addEventListener('ended', () => {
+            document.querySelectorAll('#timeline .tick').forEach(t => t.classList.remove('played'));
+        });
+        reprPlayerEl.addEventListener('loadedmetadata', () => {
+            buildTimeline(currentTimelineClip);
+        });
+    }
+    buildTimeline('bee');
+});
+
+setTimeout(() => {
+    buildTimeline('bee');
+    const reprPlayerEl = document.getElementById('reprPlayer');
+    if (reprPlayerEl) {
+        reprPlayerEl.addEventListener('timeupdate', () => {
+            const dur = reprPlayerEl.duration || 4.0;
+            const progress = reprPlayerEl.currentTime / dur;
+            const ticks = document.querySelectorAll('#timeline .tick');
+            const numTicks = ticks.length;
+            if (!numTicks) return;
+            const currentIdx = Math.floor(progress * numTicks);
+            ticks.forEach((t, i) => {
+                t.classList.toggle('played', i <= currentIdx);
+            });
+        });
+        reprPlayerEl.addEventListener('ended', () => {
+            document.querySelectorAll('#timeline .tick').forEach(t => t.classList.remove('played'));
+        });
+        reprPlayerEl.addEventListener('loadedmetadata', () => {
+            buildTimeline(currentTimelineClip);
+        });
+    }
+}, 100);
 
 /* ---- Listen page representation player ---- */
 let listenMode = 'original';
@@ -2422,11 +2646,29 @@ class NaturaDashboardHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404, "Sample file missing")
                 return
             data = file_path.read_bytes()
-            self.send_response(200)
-            self.send_header("Content-type", "audio/wav")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
+            total_len = len(data)
+            range_header = self.headers.get("Range")
+            if range_header and range_header.startswith("bytes="):
+                ranges = range_header[6:].split("-")
+                start = int(ranges[0]) if ranges[0] else 0
+                end = int(ranges[1]) if len(ranges) > 1 and ranges[1] else total_len - 1
+                start = max(0, min(start, total_len - 1))
+                end = max(start, min(end, total_len - 1))
+                chunk = data[start:end+1]
+                self.send_response(206)
+                self.send_header("Content-type", "audio/wav")
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Range", f"bytes {start}-{end}/{total_len}")
+                self.send_header("Content-Length", str(len(chunk)))
+                self.end_headers()
+                self.wfile.write(chunk)
+            else:
+                self.send_response(200)
+                self.send_header("Content-type", "audio/wav")
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Length", str(total_len))
+                self.end_headers()
+                self.wfile.write(data)
         elif parsed.path == "/api/status":
             bridge = VivoOfficeKitBridge()
             data = asdict(bridge.get_bridge_status())
