@@ -18,7 +18,6 @@ from app.ui.office_kit_bridge import VivoOfficeKitBridge
 from data.lessons import NatureLanguageBook
 
 SAMPLES_DIR = PROJECT_ROOT / "demo" / "sample_recordings"
-STATIC_IMAGES_DIR = PROJECT_ROOT / "app" / "static" / "images"
 SAMPLE_FILES = {
     "bee": "sample_bee.wav",
     "cricket": "sample_cricket.wav",
@@ -96,9 +95,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
             width: var(--phone-w);
             height: var(--phone-h);
             max-height: 94vh;
-            background: 
-                linear-gradient(180deg, rgba(246, 243, 236, 0.85) 0%, rgba(238, 244, 234, 0.90) 50%, rgba(228, 238, 224, 0.95) 100%),
-                url('/images/phone_bg.jpg') center/cover no-repeat;
+            background: linear-gradient(175deg, #fbf9f4 0%, #f4eee2 35%, #edf4e8 70%, #e6efe1 100%);
             position: relative;
             display: flex;
             flex-direction: column;
@@ -117,7 +114,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
         /* NATIVE MOBILE APP ADAPTATION (Any Phone, Tablet, Standalone PWA, or Mobile View) */
         @media (max-width: 900px), (max-device-width: 900px), (display-mode: standalone), (pointer: coarse) {
             html, body {
-                background: #0d1a10 !important;
+                background: linear-gradient(175deg, #fbf9f4 0%, #f4eee2 35%, #edf4e8 70%, #e6efe1 100%) !important;
                 height: 100% !important;
                 height: 100dvh !important;
                 overflow: hidden !important;
@@ -139,9 +136,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
                 border-radius: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
-                background: 
-                    linear-gradient(180deg, rgba(246, 243, 236, 0.85) 0%, rgba(238, 244, 234, 0.90) 50%, rgba(228, 238, 224, 0.95) 100%),
-                    url('/images/phone_bg.jpg') center/cover no-repeat !important;
+                background: linear-gradient(175deg, #fbf9f4 0%, #f4eee2 35%, #edf4e8 70%, #e6efe1 100%) !important;
             }
             .statusbar {
                 display: none !important; /* Mobile devices already show native system bar */
@@ -563,15 +558,6 @@ HTML_PAGE = r"""<!DOCTYPE html>
                 <h2>Hear the unheard</h2>
             </div>
             <div class="card">
-                <div id="listenHeroImgWrap" style="height:150px; border-radius:14px; overflow:hidden; position:relative; margin-bottom:14px; box-shadow:0 6px 18px rgba(0,0,0,0.18);">
-                    <img id="listenHeroImg" src="/images/bee.jpg" style="width:100%; height:100%; object-fit:cover; transition:opacity 0.25s ease, transform 0.3s ease;" alt="Field Species">
-                    <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(12,24,14,0.9) 0%, rgba(12,24,14,0.2) 60%, transparent 100%); display:flex; align-items:flex-end; padding:12px 14px;">
-                        <div>
-                            <span id="listenHeroBadge" class="stem-tag" style="margin:0 0 4px 0; background:rgba(42,74,44,0.92); color:#eef7ec; border:1px solid rgba(255,255,255,0.25); font-size:9.5px; padding:2px 8px; letter-spacing:0.5px;">APIS MELLIFERA · 10s CAPTURE</span>
-                            <div id="listenHeroTitle" style="color:#ffffff; font-weight:700; font-size:16px; font-family:'Fraunces', serif; text-shadow:0 2px 5px rgba(0,0,0,0.7);">Honeybee on hibiscus</div>
-                        </div>
-                    </div>
-                </div>
                 <p class="desc">The human ear covers a limited range. NATURA reprocesses captured audio so quiet or buried detail becomes clearly audible — a real-time translation, not a claim that ultrasound is literally perceived.</p>
                 <div class="toggle-row" id="listenModeRow">
                     <div class="toggle-btn active" data-mode="original" onclick="selectListenMode(this)">Original</div>
@@ -981,10 +967,10 @@ if (!isStandalone) {
    Reference field clips (real audio files served by the app)
    ========================================================= */
 const CLIPS = {
-    bee:     { label: "Honeybee on hibiscus", place: "Chennai · 06:42", url: "/audio/bee",     photo: "/images/bee.jpg",     scene: "bee",     category: "bee" },
-    cricket: { label: "Night field cricket",  place: "Backyard · 21:10", url: "/audio/cricket", photo: "/images/cricket.jpg", scene: "cricket", category: "cricket" },
-    rain:    { label: "Monsoon on teak leaves", place: "Coorg · 16:20", url: "/audio/rain",     photo: "/images/rain.jpg",    scene: "rain",    category: "rain" },
-    bat:     { label: "Bat echolocation",     place: "Auroville · 20:40", url: "/audio/bat",   photo: "/images/bat.jpg",     scene: "night",   category: "bat" },
+    bee:     { label: "Honeybee on hibiscus", place: "Chennai · 06:42", url: "/audio/bee",     scene: "bee",     category: "bee" },
+    cricket: { label: "Night field cricket",  place: "Backyard · 21:10", url: "/audio/cricket", scene: "cricket", category: "cricket" },
+    rain:    { label: "Monsoon on teak leaves", place: "Coorg · 16:20", url: "/audio/rain",     scene: "rain",    category: "rain" },
+    bat:     { label: "Bat echolocation",     place: "Auroville · 20:40", url: "/audio/bat",   scene: "night",   category: "bat" },
 };
 
 const CATEGORY_META = {
@@ -1287,20 +1273,18 @@ function applyMode(audioEl, mode) {
    Album groups — similar recordings are grouped by category
    ========================================================= */
 let albumGroups = [
-    { id: 'g-bee', category: 'bee', samples: [ { id: 's-bee', name: 'Honeybee on hibiscus', date: 'Field reference', place: 'Chennai · 06:42', audioUrl: CLIPS.bee.url, photo: '/images/bee.jpg', video: null, badge: null, interpretation: 'Apis mellifera wingbeat at ~240 Hz fundamental frequency, matching foraging flight. 93% signature match.' } ] },
-    { id: 'g-cricket', category: 'cricket', samples: [ { id: 's-cricket', name: 'Night field cricket', date: 'Field reference', place: 'Backyard · 21:10', audioUrl: CLIPS.cricket.url, photo: '/images/cricket.jpg', video: null, badge: null, interpretation: 'Regular stridulation pulses consistent with a calling male cricket. 91% signature match.' } ] },
-    { id: 'g-rain', category: 'rain', samples: [ { id: 's-rain', name: 'Monsoon on teak leaves', date: 'Field reference', place: 'Coorg · 16:20', audioUrl: CLIPS.rain.url, photo: '/images/rain.jpg', video: null, badge: null, interpretation: 'Broadband percussive texture consistent with rainfall on broad-leaf canopy. 95% signature match.' } ] },
-    { id: 'g-bat', category: 'bat', samples: [ { id: 's-bat', name: 'Bat echolocation', date: 'Field reference', place: 'Auroville · 20:40', audioUrl: CLIPS.bat.url, photo: '/images/bat.jpg', video: null, badge: null, interpretation: 'Ultrasonic frequency sweep, sonified to audible range. 89% signature match, Pipistrelle echolocation.' } ] },
+    { id: 'g-bee', category: 'bee', samples: [ { id: 's-bee', name: 'Honeybee on hibiscus', date: 'Field reference', place: 'Chennai · 06:42', audioUrl: CLIPS.bee.url, photo: null, video: null, badge: null, interpretation: 'Apis mellifera wingbeat at ~240 Hz fundamental frequency, matching foraging flight. 91% signature match.' } ] },
+    { id: 'g-cricket', category: 'cricket', samples: [ { id: 's-cricket', name: 'Night field cricket', date: 'Field reference', place: 'Backyard · 21:10', audioUrl: CLIPS.cricket.url, photo: null, video: null, badge: null, interpretation: 'Regular stridulation pulses consistent with a calling male cricket. 87% signature match.' } ] },
+    { id: 'g-rain', category: 'rain', samples: [ { id: 's-rain', name: 'Monsoon on teak leaves', date: 'Field reference', place: 'Coorg · 16:20', audioUrl: CLIPS.rain.url, photo: null, video: null, badge: null, interpretation: 'Broadband percussive texture consistent with rainfall on broad-leaf canopy. 95% signature match.' } ] },
+    { id: 'g-bat', category: 'bat', samples: [ { id: 's-bat', name: 'Bat echolocation', date: 'Field reference', place: 'Auroville · 20:40', audioUrl: CLIPS.bat.url, photo: null, video: null, badge: null, interpretation: 'Ultrasonic frequency sweep, sonified to audible range. 78% signature match, species unconfirmed.' } ] },
 ];
 let idSeq = 0;
 function newId(prefix) { return prefix + '-' + (idSeq++) + '-' + Date.now().toString(36); }
 
 function sampleThumb(sample, category) {
-    if (sample.photo) return '<img src="'+sample.photo+'" style="width:100%;height:100%;object-fit:cover;">';
-    if (sample.videoThumb) return '<img src="'+sample.videoThumb+'" style="width:100%;height:100%;object-fit:cover;">';
-    if (sample.video) return '<video src="'+sample.video+'" muted style="width:100%;height:100%;object-fit:cover;"></video>';
-    const defaultPhoto = CLIPS[category] && CLIPS[category].photo;
-    if (defaultPhoto) return '<img src="'+defaultPhoto+'" style="width:100%;height:100%;object-fit:cover;">';
+    if (sample.photo) return '<img src="'+sample.photo+'">';
+    if (sample.videoThumb) return '<img src="'+sample.videoThumb+'">';
+    if (sample.video) return '<video src="'+sample.video+'" muted></video>';
     return sceneArt((CATEGORY_META[category] || CATEGORY_META.unknown).scene);
 }
 function groupLatestDate(group) { return group.samples[0] ? group.samples[0].date : ''; }
@@ -1563,35 +1547,8 @@ function redirectTimelineToCompose() {
     goToPage('page-compose');
 }
 
-function updateListenHeroImage(clipKey) {
-    const meta = CLIPS[clipKey];
-    const imgEl = document.getElementById('listenHeroImg');
-    const titleEl = document.getElementById('listenHeroTitle');
-    const badgeEl = document.getElementById('listenHeroBadge');
-    if (imgEl && meta) {
-        imgEl.style.opacity = '0.35';
-        imgEl.style.transform = 'scale(0.97)';
-        setTimeout(() => {
-            imgEl.src = meta.photo || '/images/bee.jpg';
-            imgEl.style.opacity = '1';
-            imgEl.style.transform = 'scale(1)';
-        }, 140);
-    }
-    if (titleEl && meta) titleEl.textContent = meta.label;
-    if (badgeEl && meta) {
-        const sciBadges = {
-            bee: "APIS MELLIFERA · 10s BIOACOUSTICS",
-            cricket: "OECANTHINAE · 10s STRIDULATION",
-            rain: "HYDROMETEOROLOGY · 10s MONSOON",
-            bat: "PIPISTRELLUS · 10s ULTRASOUND"
-        };
-        badgeEl.textContent = sciBadges[clipKey] || "10s FIELD RECORDING";
-    }
-}
-
 function onListenClipChange(clipKey) {
     currentTimelineClip = clipKey;
-    updateListenHeroImage(clipKey);
     const player = document.getElementById('reprPlayer');
     if (player) {
         player.src = '/audio/' + clipKey + '?mode=' + listenMode;
@@ -2852,21 +2809,8 @@ class NaturaDashboardHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Content-type", "audio/wav")
                 self.send_header("Accept-Ranges", "bytes")
                 self.send_header("Content-Length", str(total_len))
-        elif parsed.path.startswith("/images/") or parsed.path.startswith("/static/images/"):
-            filename = parsed.path.split("/images/", 1)[-1].split("?")[0].lstrip("/")
-            img_path = STATIC_IMAGES_DIR / filename
-            if not img_path.exists():
-                self.send_error(404, "Image not found")
-                return
-            ext = img_path.suffix.lower()
-            mime = "image/jpeg" if ext in (".jpg", ".jpeg") else "image/png" if ext == ".png" else "image/svg+xml"
-            data = img_path.read_bytes()
-            self.send_response(200)
-            self.send_header("Content-type", mime)
-            self.send_header("Content-Length", str(len(data)))
-            self.send_header("Cache-Control", "public, max-age=86400")
-            self.end_headers()
-            self.wfile.write(data)
+                self.end_headers()
+                self.wfile.write(data)
         elif parsed.path == "/api/status":
             bridge = VivoOfficeKitBridge()
             data = asdict(bridge.get_bridge_status())
